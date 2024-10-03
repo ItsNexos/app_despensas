@@ -1,17 +1,16 @@
-import 'package:app_despensas/features/user_auth/presentation/pages/sign_up_page.dart';
+import 'package:app_despensas/features/user_auth/presentation/pages/login_page.dart';
 import 'package:app_despensas/features/user_auth/presentation/widgets/form_container_widget.dart';
-import 'package:app_despensas/pages/home_page.dart';
 import 'package:flutter/material.dart';
 
-class LoginPage extends StatelessWidget {
-  const LoginPage({super.key});
+class SignUpPage extends StatelessWidget {
+  const SignUpPage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
           title: Text(
-            "Login del usuario",
+            "Registro de usuario",
             style: TextStyle(color: Colors.white),
           ),
           backgroundColor: Colors.blue,
@@ -23,7 +22,7 @@ class LoginPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                "Login",
+                "Registro",
                 style: TextStyle(
                   fontSize: 27,
                   fontWeight: FontWeight.bold,
@@ -31,6 +30,13 @@ class LoginPage extends StatelessWidget {
               ),
               SizedBox(
                 height: 30,
+              ),
+              FormContainerWidget(
+                hintText: "Nombre de usuario",
+                isPasswordField: false,
+              ),
+              SizedBox(
+                height: 20,
               ),
               FormContainerWidget(
                 hintText: "Email",
@@ -46,31 +52,26 @@ class LoginPage extends StatelessWidget {
               SizedBox(
                 height: 30,
               ),
-              GestureDetector(
-                  onTap: () {
-                    Navigator.push(context,
-                        MaterialPageRoute(builder: (context) => HomePage()));
-                  },
-                  child: Container(
-                      width: double.infinity,
-                      height: 45,
-                      decoration: BoxDecoration(
-                        color: Colors.blue,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Center(
-                          child: Text(
-                        "Iniciar Sesión",
-                        style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
-                      )))),
+              Container(
+                  width: double.infinity,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: Colors.blue,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Center(
+                      child: Text(
+                    "Registrarse",
+                    style: TextStyle(
+                        color: Colors.white, fontWeight: FontWeight.bold),
+                  ))),
               SizedBox(
                 height: 20,
               ),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text("No tienes una cuenta aún?"),
+                  Text("Ya tienes una cuenta?"),
                   SizedBox(
                     width: 5,
                   ),
@@ -78,12 +79,12 @@ class LoginPage extends StatelessWidget {
                     onTap: () {
                       Navigator.pushAndRemoveUntil(
                         context,
-                        MaterialPageRoute(builder: (context) => SignUpPage()),
+                        MaterialPageRoute(builder: (context) => LoginPage()),
                         (route) => false,
                       );
                     },
                     child: Text(
-                      "Registrate!",
+                      "Iniciar sesión",
                       style: TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.bold,
