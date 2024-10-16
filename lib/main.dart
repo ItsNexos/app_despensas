@@ -1,13 +1,13 @@
 import 'package:app_despensas/features/app/splash_screen/splash_screen.dart';
 import 'package:app_despensas/features/user_auth/presentation/pages/login_page.dart';
-import 'package:app_despensas/pages/home_page.dart';
+import 'package:app_despensas/pages/voice_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
-}
+} 
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
