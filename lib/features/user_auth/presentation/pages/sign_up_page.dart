@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'login_page.dart';
@@ -11,6 +12,8 @@ class _SignUpPageState extends State<SignUpPage> {
   TextEditingController _nameController = TextEditingController();
   TextEditingController _emailController = TextEditingController();
   TextEditingController _passwordController = TextEditingController();
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
   void dispose() {
@@ -26,10 +29,37 @@ class _SignUpPageState extends State<SignUpPage> {
     String password = _passwordController.text;
 
     try {
+      // Crear usuario en Firebase Auth
       UserCredential userCredential = await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
 
-      await userCredential.user?.updateDisplayName(name);
+      User? user = userCredential.user;
+
+      // Actualizar el nombre de usuario
+      await user?.updateDisplayName(name);
+
+      // Crear la colección del usuario en Firestore
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user?.uid)
+          .set({
+        'nombre': name,
+        'correo': email,
+      });
+
+      // Crear la despensa "Productos no ordenados" dentro de la colección del usuario
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(user?.uid)
+          .collection('despensas')
+          .doc('Productos no ordenados') // ID personalizado para el documento
+          .set({
+        'nombre': 'Productos no ordenados',
+        'categoria': 'Productos para ordenar',
+        'icono': 'icono.png',
+      });
+
+      // Redirigir al usuario al LoginPage
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => LoginPage()));
     } catch (e) {
