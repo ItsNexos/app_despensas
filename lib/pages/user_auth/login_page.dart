@@ -1,9 +1,9 @@
 import 'package:app_despensas/pages/home_page.dart';
+import 'package:app_despensas/pages/user_auth/sign_up_page.dart';
 import 'package:app_despensas/pages/user_page.dart';
 import 'package:app_despensas/pages/voice_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'sign_up_page.dart';
 
 class LoginPage extends StatefulWidget {
   @override

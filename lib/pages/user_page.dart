@@ -1,4 +1,4 @@
-import 'package:app_despensas/features/user_auth/presentation/pages/login_page.dart';
+import 'package:app_despensas/pages/user_auth/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 

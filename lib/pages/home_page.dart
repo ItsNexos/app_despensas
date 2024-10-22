@@ -1,91 +1,100 @@
-import 'package:app_despensas/models/pantry_model.dart';
-import 'package:app_despensas/pages/user_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'pantry_page.dart'; // Importa la pantalla de Pantry
+import 'package:firebase_auth/firebase_auth.dart';
+import 'pantry_page.dart';
+import 'shopping_page.dart';
+import 'recipes_page.dart';
+import 'user_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    User? user = FirebaseAuth.instance.currentUser; // Obtén el usuario actual
+    User? user = FirebaseAuth.instance.currentUser;
+    String username = user?.displayName ?? 'Usuario';
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('APP despensas :D'),
-        backgroundColor: Color(0xFFB0C4DE), // Color similar al diseño
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            const Text(
-              '¿Qué quieres hacer hoy?',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
-            // Botones de opciones
-            Expanded(
-              child: GridView.count(
-                crossAxisCount: 2,
-                crossAxisSpacing: 20,
-                mainAxisSpacing: 20,
+            // Banner de Bienvenida
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(80),
+              color: const Color(0xFF4A618D),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildOptionButton(
-                    context,
-                    icon: Icons.shopping_cart,
-                    label: 'Ir a comprar',
-                    onTap: () {
-                      // Acción para ir a la pantalla de compras
-                    },
+                  Text(
+                    'Bienvenido $username!',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
-                  _buildOptionButton(
-                    context,
-                    icon: Icons.book,
-                    label: 'Ver recetas',
-                    onTap: () {
-                      // Acción para ir a la pantalla de recetas
-                    },
-                  ),
-                  _buildOptionButton(
-                    context,
-                    icon: Icons.kitchen,
-                    label: 'Ver despensas',
-                    onTap: () {
-                      // Navega a la pantalla de PantryPage (Despensas)
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PantryPage(userId: user!.uid),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildOptionButton(
-                    context,
-                    icon: Icons.checklist,
-                    label: 'Planificar',
-                    onTap: () {
-                      // Acción para ir a la pantalla de planificación
-                    },
-                  ),
-                  _buildOptionButton(
-                    context,
-                    icon: Icons.person,
-                    label: 'mi perfil',
-                    onTap: () {
-                      // Navega a la pantalla de PantryPage (Despensas)
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => UserPage(),
-                        ),
-                      );
-                    },
+                  const SizedBox(height: 5),
+                  const Text(
+                    '¿Qué quieres hacer hoy?',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.white70,
+                    ),
                   ),
                 ],
               ),
+            ),
+            const SizedBox(height: 20),
+
+            // Botones apilados como en la imagen
+            _buildHomeButton(
+              context,
+              icon: Icons.shopping_cart_outlined,
+              label: 'Ir de compras',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ShoppingPage()),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildHomeButton(
+              context,
+              icon: Icons.restaurant_menu,
+              label: 'Quiero cocinar',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const RecipesPage()),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildHomeButton(
+              context,
+              icon: Icons.kitchen,
+              label: 'Mis despensas',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => PantryPage(userId: user!.uid)),
+                );
+              },
+            ),
+            const SizedBox(height: 20),
+            _buildHomeButton(
+              context,
+              icon: Icons.person_outline,
+              label: 'Usuario',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => UserPage()),
+                );
+              },
             ),
           ],
         ),
@@ -93,30 +102,40 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Método para construir cada botón del Grid
-  Widget _buildOptionButton(BuildContext context,
+  Widget _buildHomeButton(BuildContext context,
       {required IconData icon,
       required String label,
       required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
+        padding: const EdgeInsets.all(20),
+        margin: const EdgeInsets.symmetric(horizontal: 16),
         decoration: BoxDecoration(
-          color: Color(0xFFE5E5E5),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(12),
+          boxShadow: const [
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 10,
+              offset: Offset(0, 5),
+            ),
+          ],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            Icon(icon, size: 50, color: Color(0xFF6A7BA2)),
-            const SizedBox(height: 10),
+            Icon(icon, size: 40, color: const Color(0xFF4A618D)),
+            const SizedBox(width: 20),
             Text(
               label,
               style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF6A7BA2)),
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF4A618D),
+              ),
             ),
+            const Spacer(),
+            const Icon(Icons.arrow_forward_ios, color: Color(0xFF4A618D)),
           ],
         ),
       ),

@@ -1,3 +1,4 @@
+import 'package:app_despensas/pages/pantry_view.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -74,6 +75,95 @@ class _PantryPageState extends State<PantryPage> {
     });
   }
 
+  void _showEditPantryDialog(BuildContext context, String pantryId,
+      String currentName, String currentCategory, IconData currentIcon) {
+    String updatedName = currentName;
+    String updatedCategory = currentCategory;
+    IconData updatedIcon = currentIcon;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Editar Despensa'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                decoration:
+                    const InputDecoration(hintText: 'Nombre de la despensa'),
+                controller: TextEditingController(
+                    text: currentName), // Pre-fill the name
+                onChanged: (value) {
+                  updatedName = value;
+                },
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                decoration:
+                    const InputDecoration(hintText: 'Categoría de la despensa'),
+                controller: TextEditingController(
+                    text: currentCategory), // Pre-fill the category
+                onChanged: (value) {
+                  updatedCategory = value;
+                },
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<IconData>(
+                value: updatedIcon,
+                isExpanded: true,
+                hint: const Text('Seleccionar ícono'),
+                items: availableIcons.map((iconData) {
+                  return DropdownMenuItem<IconData>(
+                    value: iconData,
+                    child: Row(
+                      children: [
+                        Icon(iconData,
+                            size: 24, color: const Color(0xFF5E6773)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    updatedIcon = value!;
+                  });
+                },
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                // Actualizar la despensa en Firestore
+                FirebaseFirestore.instance
+                    .collection('usuarios')
+                    .doc(widget.userId)
+                    .collection('despensas')
+                    .doc(pantryId)
+                    .update({
+                  'nombre': updatedName,
+                  'categoria': updatedCategory,
+                  'icono': updatedIcon.codePoint,
+                }).then((_) {
+                  _loadPantries(widget.userId); // Recargar las despensas
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Actualizar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -126,8 +216,15 @@ class _PantryPageState extends State<PantryPage> {
                       color: pantry['color'],
                       alertColor: pantry['alertColor'],
                       onTap: () {
-                        // Acción al presionar una despensa
-                        print('Navegar a los productos de ${pantry['title']}');
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PantryView(
+                              despensaId: pantry['id'],
+                              despensaNombre: pantry['title'],
+                            ),
+                          ),
+                        );
                       },
                       onDelete: () {
                         // Eliminar despensa en Firestore
@@ -137,11 +234,18 @@ class _PantryPageState extends State<PantryPage> {
                             .collection('despensas')
                             .doc(pantry['id'])
                             .delete();
-                        // Eliminar visualmente
                         setState(() {
                           pantries.removeAt(index);
                           _filterPantries();
                         });
+                      },
+                      onEdit: () {
+                        _showEditPantryDialog(
+                            context,
+                            pantry['id'],
+                            pantry['title'],
+                            pantry['subtitle'],
+                            pantry['icon']);
                       },
                     ),
                   );
@@ -200,6 +304,7 @@ class _PantryPageState extends State<PantryPage> {
     required Color alertColor,
     required VoidCallback onTap,
     required VoidCallback onDelete,
+    required VoidCallback onEdit, // <-- Agregar onEdit
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -252,6 +357,10 @@ class _PantryPageState extends State<PantryPage> {
                     fontWeight: FontWeight.bold,
                     color: Colors.black54,
                   ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit), // <-- Agregar botón de editar
+                  onPressed: onEdit, // <-- Llamar a onEdit
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete),
