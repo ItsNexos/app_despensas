@@ -1,14 +1,20 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:speech_to_text/speech_to_text.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class VoicePage extends StatefulWidget {
-  const VoicePage({super.key});
+  final String despensaId;
+
+  const VoicePage({super.key, required this.despensaId});
 
   @override
   State<VoicePage> createState() => _VoicePageState();
 }
 
 class _VoicePageState extends State<VoicePage> {
+  User? user = FirebaseAuth.instance.currentUser;
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   String _wordsSpoken = "";
@@ -50,61 +56,54 @@ class _VoicePageState extends State<VoicePage> {
   }
 
   void _filterSpokenWords(String words) {
-    // Dividimos las palabras en una lista
     List<String> wordList = words.split(' ');
-
     List<Map<String, dynamic>> filteredProducts = [];
     String currentProduct = '';
     int? currentQuantity;
 
-    // Recorremos todas las palabras una por una
     for (int i = 0; i < wordList.length; i++) {
       String word = wordList[i];
-
-      // Primero intentamos convertir la palabra a un número directamente
       int? quantity = _tryParseNumber(word);
 
       if (quantity != null) {
-        // Si encontramos un número y ya tenemos un producto actual, lo guardamos
         if (currentProduct.isNotEmpty) {
-          filteredProducts.add(
-              {'quantity': currentQuantity, 'product': currentProduct.trim()});
+          filteredProducts.add({
+            'quantity': currentQuantity,
+            'product': currentProduct.trim(),
+            'date': DateTime.now().toString(), // Fecha de ingreso
+            'expiryDate': "" // Fecha de vencimiento vacía
+          });
         }
-
-        // Guardamos la nueva cantidad y reiniciamos el producto
         currentQuantity = quantity;
         currentProduct = '';
       } else {
-        // Si no es un número, asumimos que es parte del nombre del producto
         currentProduct += word + ' ';
       }
     }
 
-    // Guardamos el último producto si quedó alguno sin agregar
     if (currentProduct.isNotEmpty && currentQuantity != null) {
-      filteredProducts
-          .add({'quantity': currentQuantity, 'product': currentProduct.trim()});
+      filteredProducts.add({
+        'quantity': currentQuantity,
+        'product': currentProduct.trim(),
+        'date': DateTime.now().toString(), // Fecha de ingreso
+        'expiryDate': "" // Fecha de vencimiento vacía
+      });
     }
 
-    // Actualizamos la lista de productos filtrados
     setState(() {
       _products = filteredProducts;
     });
   }
 
-// Método que intenta interpretar un número como string o como palabra
   int? _tryParseNumber(String word) {
-    // Primero intentamos convertir el string directamente a número
     try {
-      return int.parse(word); // Si es "23", "15", etc.
+      return int.parse(word);
     } catch (e) {
-      // Si no es un número directo, intentamos mapear la palabra
       return palabrasANumeroExtendido(word);
     }
   }
 
   int? palabrasANumeroExtendido(String palabra) {
-    // Mapeo de unidades y decenas
     Map<String, int> unidades = {
       'cero': 0,
       'un': 1,
@@ -116,136 +115,198 @@ class _VoicePageState extends State<VoicePage> {
       'seis': 6,
       'siete': 7,
       'ocho': 8,
-      'nueve': 9,
+      'nueve': 9
     };
-
-    Map<String, int> decenas = {
-      'diez': 10,
-      'veinte': 20,
-      'treinta': 30,
-      'cuarenta': 40,
-      'cincuenta': 50,
-      'sesenta': 60,
-      'setenta': 70,
-      'ochenta': 80,
-      'noventa': 90,
-    };
-
+    Map<String, int> decenas = {'diez': 10, 'veinte': 20, 'treinta': 30};
     Map<String, int> excepciones = {
       'once': 11,
       'doce': 12,
       'trece': 13,
       'catorce': 14,
-      'quince': 15,
-      'dieciséis': 16,
-      'diecisiete': 17,
-      'dieciocho': 18,
-      'diecinueve': 19,
+      'quince': 15
     };
 
-    // División del input en palabras
-    List<String> palabras = palabra.split(' ');
+    if (unidades.containsKey(palabra)) return unidades[palabra];
+    if (decenas.containsKey(palabra)) return decenas[palabra];
+    if (excepciones.containsKey(palabra)) return excepciones[palabra];
+    return null;
+  }
 
-    int total = 0;
-    bool foundDecena = false;
+  void _editarProducto(int index) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        String nombre = _products[index]['product'];
+        int cantidad = _products[index]['quantity'];
+        return AlertDialog(
+          title: Text('Editar producto'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: TextEditingController(text: nombre),
+                onChanged: (value) {
+                  nombre = value;
+                },
+                decoration: InputDecoration(labelText: 'Nombre del producto'),
+              ),
+              TextField(
+                controller: TextEditingController(text: cantidad.toString()),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  try {
+                    // Intentar convertir el valor a entero
+                    cantidad = int.parse(value);
+                  } catch (e) {
+                    // Si el valor no es válido, poner cantidad a 0 o alguna otra acción
+                    cantidad = 0;
+                    print('Error al convertir la cantidad: $e');
+                  }
+                },
+                decoration: InputDecoration(labelText: 'Cantidad'),
+              )
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _products[index]['product'] = nombre;
+                  _products[index]['quantity'] = cantidad;
+                });
+                Navigator.pop(context);
+              },
+              child: Text('Guardar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+              },
+              child: Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
-    for (var palabra in palabras) {
-      if (unidades.containsKey(palabra)) {
-        total += unidades[palabra]!;
-      } else if (decenas.containsKey(palabra)) {
-        total += decenas[palabra]!;
-        foundDecena = true;
-      } else if (excepciones.containsKey(palabra)) {
-        return excepciones[palabra];
-      } else {
-        return null; // Si no reconoce la palabra, devuelve null
+  void _eliminarProducto(int index) {
+    setState(() {
+      _products.removeAt(index);
+    });
+  }
+
+  void _agregarProductosADespensa() async {
+    // Referencia a la colección 'despensas' y al documento con la ID de la despensa
+    CollectionReference despensasRef =
+        FirebaseFirestore.instance.collection('despensas');
+
+    try {
+      // Recorremos cada producto en la lista _products
+      for (var product in _products) {
+        // Agregamos el producto `product['quantity']` veces
+        int cantidad = product['quantity'];
+        String nombre = product['product'];
+
+        for (int i = 0; i < cantidad; i++) {
+          await despensasRef
+              .doc(widget
+                  .despensaId) // Documento de la despensa con el ID recibido
+              .collection('productos') // Subcolección 'productos'
+              .add({
+            'nombre': product['product'], // Nombre del producto
+            'fechaIngreso': DateFormat('dd/MM/yyyy')
+                .format(DateTime.now()), // Fecha de ingreso
+            'fechaCaducidad': '', // Dejar vacío, se puede editar después
+            'stockMinimo': 0, // Se agrega el campo stockMinimo con valor 0
+          });
+
+          FirebaseFirestore.instance
+              .collection('usuarios')
+              .doc(user!.uid)
+              .collection('lista_productos')
+              .doc(nombre)
+              .set({'nombre': nombre}, SetOptions(merge: true));
+        }
       }
-    }
 
-    // Si encuentra una decena (20, 30, etc.), devolvemos el número.
-    return total;
+      // Confirmación en consola
+      print('Productos añadidos a la despensa con ID: ${widget.despensaId}');
+      print(_products);
+
+      // Feedback visual (por ejemplo, un snackbar o un diálogo)
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text('Productos añadidos a la despensa exitosamente')),
+      );
+    } catch (e) {
+      print('Error al agregar productos: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al añadir productos: $e')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.red,
-        title: Text(
-          'Demo de voz',
-          style: TextStyle(
-            color: Colors.white,
-          ),
+        backgroundColor: Colors.green,
+        title: const Text(
+          'Dictar productos',
+          style: TextStyle(color: Colors.white),
         ),
       ),
-      body: Center(
-        child: Column(
-          children: [
-            Container(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                _speechToText.isListening
-                    ? "Escuchando..."
-                    : _speechEnabled
-                        ? "Presiona el botón para comenzar a hablar..."
-                        : "Reconocimiento de voz no disponible",
-                style: TextStyle(fontSize: 20.0),
-              ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Text(
+              _speechToText.isListening
+                  ? "Escuchando..."
+                  : _speechEnabled
+                      ? "Presiona el botón para comenzar a hablar..."
+                      : "Reconocimiento de voz no disponible",
+              style: const TextStyle(fontSize: 20.0),
             ),
-            Expanded(
-              child: Container(
-                padding: EdgeInsets.all(16),
-                child: _products.isNotEmpty
-                    ? ListView.builder(
-                        itemCount: _products.length,
-                        itemBuilder: (context, index) {
-                          final product = _products[index];
-                          return ListTile(
-                            title: Text(
-                              "${product['quantity']} x ${product['product']}",
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          );
-                        },
-                      )
-                    : Text(
-                        "No se ha reconocido ningún producto.",
-                        style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w300,
+          ),
+          Expanded(
+            child: _products.isNotEmpty
+                ? ListView.builder(
+                    itemCount: _products.length,
+                    itemBuilder: (context, index) {
+                      final product = _products[index];
+                      return ListTile(
+                        title: Text(
+                          "${product['quantity']} x ${product['product']}",
+                          style: const TextStyle(fontSize: 22),
                         ),
-                      ),
-              ),
-            ),
-            // Mostrar el texto completo reconocido abajo de la lista de productos
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(
-                "Texto completo: $_wordsSpoken",
-                style: TextStyle(
-                  fontSize: 18,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-            ),
-            if (_speechToText.isNotListening && _confidenceLevel > 0)
-              Padding(
-                padding: const EdgeInsets.only(
-                  bottom: 100,
-                ),
-                child: Text(
-                  "Confianza: ${(_confidenceLevel * 100).toStringAsFixed(1)}%",
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w300,
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: Icon(Icons.edit),
+                              onPressed: () => _editarProducto(index),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.delete),
+                              onPressed: () => _eliminarProducto(index),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  )
+                : const Text(
+                    "No se ha reconocido ningún producto.",
+                    style: TextStyle(fontSize: 22),
                   ),
-                ),
-              ),
-          ],
-        ),
+          ),
+          ElevatedButton(
+            onPressed: _agregarProductosADespensa,
+            child: const Text('Agregar productos a la despensa'),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _speechToText.isListening ? _stopListening : _startListening,
@@ -254,7 +315,7 @@ class _VoicePageState extends State<VoicePage> {
           _speechToText.isNotListening ? Icons.mic_off : Icons.mic,
           color: Colors.white,
         ),
-        backgroundColor: Colors.red,
+        backgroundColor: Colors.green,
       ),
     );
   }
