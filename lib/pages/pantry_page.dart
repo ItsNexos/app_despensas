@@ -57,7 +57,6 @@ class _PantryPageState extends State<PantryPage> {
             .doc(pantryId)
             .collection('productos')
             .get();
-
         int productCount = productsSnapshot.docs.length;
 
         loadedPantries.add({
@@ -111,6 +110,11 @@ class _PantryPageState extends State<PantryPage> {
                     .collection('despensas')
                     .doc(pantryId)
                     .delete();
+                FirebaseFirestore.instance
+                    .collection('despensas')
+                    .doc(pantryId)
+                    .delete();
+
                 setState(() {
                   pantries.removeAt(index);
                   _filterPantries();
