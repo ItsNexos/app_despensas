@@ -198,8 +198,10 @@ class _VoicePageState extends State<VoicePage> {
 
   void _agregarProductosADespensa() async {
     // Referencia a la colección 'despensas' y al documento con la ID de la despensa
-    CollectionReference despensasRef =
-        FirebaseFirestore.instance.collection('despensas');
+    CollectionReference despensasRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user!.uid)
+        .collection('despensas');
 
     try {
       // Recorremos cada producto en la lista _products

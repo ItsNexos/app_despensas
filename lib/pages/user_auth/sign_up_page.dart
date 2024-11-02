@@ -81,8 +81,8 @@ class _SignUpPageState extends State<SignUpPage> {
           .doc('Productos no ordenados')
           .set({
         'nombre': 'Productos no ordenados',
-        'categoria': 'Productos para ordenar',
-        'icono': 'icono.png',
+        'descripcion': 'Productos para ordenar',
+        'icono': 58261,
       });
 
       // Cerrar sesión después de crear la cuenta

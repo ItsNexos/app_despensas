@@ -33,6 +33,8 @@ class _PantryViewState extends State<PantryView> {
   // Cargar productos agrupados por nombre
   void _loadProductos() async {
     FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')
@@ -80,18 +82,17 @@ class _PantryViewState extends State<PantryView> {
 
   // Obtener color basado en la fecha de caducidad
   Color _getColorBasedOnExpiry(DateTime expiryDate) {
-  final now = DateTime.now();
-  final difference = expiryDate.difference(now).inDays;
+    final now = DateTime.now();
+    final difference = expiryDate.difference(now).inDays;
 
-  if (difference < 0) {
-    return Colors.red; // Rojo para fechas pasadas
-  } else if (difference <= 7) {
-    return Colors.orange; // Naranja para dentro de una semana
-  } else {
-    return Colors.green; // Verde para después de una semana
+    if (difference < 0) {
+      return Colors.red; // Rojo para fechas pasadas
+    } else if (difference <= 7) {
+      return Colors.orange; // Naranja para dentro de una semana
+    } else {
+      return Colors.green; // Verde para después de una semana
+    }
   }
-}
-
 
   // Modal para agregar producto manualmente
   void _agregarProductoManual(BuildContext context) {
@@ -204,6 +205,8 @@ class _PantryViewState extends State<PantryView> {
       };
 
       FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.userId)
           .collection('despensas')
           .doc(widget.despensaId)
           .collection('productos')
@@ -224,6 +227,8 @@ class _PantryViewState extends State<PantryView> {
   void _actualizarProducto(String id, String nuevoNombre,
       String nuevaFechaCaducidad, int? nuevoStockMinimo) {
     FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')
@@ -314,6 +319,8 @@ class _PantryViewState extends State<PantryView> {
 
   void _eliminarProducto(String productoId) {
     FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')

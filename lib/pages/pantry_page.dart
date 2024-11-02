@@ -40,7 +40,6 @@ class _PantryPageState extends State<PantryPage> {
     super.dispose();
   }
 
-  // Cargar despensas y productos desde Firestore
   void _loadPantries(String userId) async {
     FirebaseFirestore.instance
         .collection('usuarios')
@@ -53,6 +52,8 @@ class _PantryPageState extends State<PantryPage> {
       for (var doc in querySnapshot.docs) {
         String pantryId = doc.id;
         QuerySnapshot productsSnapshot = await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(userId)
             .collection('despensas')
             .doc(pantryId)
             .collection('productos')
@@ -61,19 +62,22 @@ class _PantryPageState extends State<PantryPage> {
 
         loadedPantries.add({
           'id': pantryId,
-          'icon': Icons.kitchen,
+          'icon': IconData(doc['icono'], fontFamily: 'MaterialIcons'),
           'title': doc['nombre'],
-          'subtitle': doc['categoria'],
+          'subtitle': doc['descripcion'],
           'quantity': '$productCount productos',
           'color': const Color.fromARGB(255, 238, 238, 238),
           'alertColor': const Color(0XFF5E6773),
         });
       }
 
-      setState(() {
-        pantries = loadedPantries;
-        filteredPantries = pantries;
-      });
+      // Asegurarse de que el widget esté montado antes de llamar a setState
+      if (mounted) {
+        setState(() {
+          pantries = loadedPantries;
+          filteredPantries = pantries;
+        });
+      }
     });
   }
 
@@ -86,8 +90,17 @@ class _PantryPageState extends State<PantryPage> {
     });
   }
 
-  // Diálogo de confirmación de eliminación
+  // Cambios en el diálogo de confirmación para evitar la eliminación de "Productos no ordenados".
   void _confirmDelete(BuildContext context, String pantryId, int index) {
+    if (filteredPantries[index]['title'] == 'Productos no ordenados') {
+      // Muestra un mensaje o evita continuar si es la despensa predeterminada
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esta despensa no se puede eliminar.')),
+      );
+      return;
+    }
+
+    // Código de eliminación original
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -103,14 +116,9 @@ class _PantryPageState extends State<PantryPage> {
             ),
             TextButton(
               onPressed: () {
-                // Eliminar despensa de Firestore
                 FirebaseFirestore.instance
                     .collection('usuarios')
                     .doc(widget.userId)
-                    .collection('despensas')
-                    .doc(pantryId)
-                    .delete();
-                FirebaseFirestore.instance
                     .collection('despensas')
                     .doc(pantryId)
                     .delete();
@@ -143,7 +151,8 @@ class _PantryPageState extends State<PantryPage> {
               title: const Text('Editar despensa'),
               onTap: () {
                 Navigator.pop(context);
-                _showEditPantryDialog(context, pantryId, title, subtitle, icon);
+                _showEditPantryDialog(
+                    context, pantryId, title, subtitle, icon, index);
               },
             ),
             ListTile(
@@ -160,11 +169,24 @@ class _PantryPageState extends State<PantryPage> {
     );
   }
 
-  // Diálogo para editar despensa
-  void _showEditPantryDialog(BuildContext context, String pantryId,
-      String currentName, String currentCategory, IconData currentIcon) {
+  // Cambios en _showEditPantryDialog para cambiar el campo de "categoria" a "descripcion" y permitir la edición del ícono.
+  void _showEditPantryDialog(
+      BuildContext context,
+      String pantryId,
+      String currentName,
+      String currentDescription,
+      IconData currentIcon,
+      int index) {
+    if (filteredPantries[index]['title'] == 'Productos no ordenados') {
+      // Muestra un mensaje o evita continuar si es la despensa predeterminada
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Esta despensa no se puede editar.')),
+      );
+      return;
+    }
     String updatedName = currentName;
-    String updatedCategory = currentCategory;
+    String updatedDescription = currentDescription;
+    IconData updatedIcon = currentIcon;
 
     showDialog(
       context: context,
@@ -184,11 +206,33 @@ class _PantryPageState extends State<PantryPage> {
               ),
               const SizedBox(height: 10),
               TextField(
-                decoration:
-                    const InputDecoration(hintText: 'Categoría de la despensa'),
-                controller: TextEditingController(text: currentCategory),
+                decoration: const InputDecoration(
+                    hintText: 'Descripción de la despensa'),
+                controller: TextEditingController(text: currentDescription),
                 onChanged: (value) {
-                  updatedCategory = value;
+                  updatedDescription = value;
+                },
+              ),
+              const SizedBox(height: 10),
+              DropdownButton<IconData>(
+                value: updatedIcon,
+                isExpanded: true,
+                hint: const Text('Seleccionar ícono'),
+                items: availableIcons.map((iconData) {
+                  return DropdownMenuItem<IconData>(
+                    value: iconData,
+                    child: Row(
+                      children: [
+                        Icon(iconData,
+                            size: 24, color: const Color(0xFF5E6773)),
+                      ],
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    updatedIcon = value!;
+                  });
                 },
               ),
             ],
@@ -209,7 +253,8 @@ class _PantryPageState extends State<PantryPage> {
                     .doc(pantryId)
                     .update({
                   'nombre': updatedName,
-                  'categoria': updatedCategory,
+                  'descripcion': updatedDescription,
+                  'icono': updatedIcon.codePoint,
                 }).then((_) {
                   _loadPantries(widget.userId);
                 });
@@ -342,14 +387,14 @@ class _PantryPageState extends State<PantryPage> {
                     title,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: 18,
+                      fontSize: 15,
                     ),
                   ),
                   const SizedBox(height: 5),
                   Text(
                     subtitle,
                     style: const TextStyle(
-                      fontSize: 16,
+                      fontSize: 12,
                       color: Colors.black54,
                     ),
                   ),
@@ -361,7 +406,7 @@ class _PantryPageState extends State<PantryPage> {
             quantity,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 16,
+              fontSize: 12,
               color: Colors.black,
             ),
           ),
@@ -370,7 +415,7 @@ class _PantryPageState extends State<PantryPage> {
     );
   }
 
-  //Guardar despensa
+// Guardar nueva despensa
   void _showAddPantryDialog(BuildContext context) {
     String name = '';
     String category = '';
@@ -384,16 +429,14 @@ class _PantryPageState extends State<PantryPage> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                decoration:
-                    const InputDecoration(hintText: 'Nombre de la despensa'),
+                decoration: const InputDecoration(hintText: 'Nombre'),
                 onChanged: (value) {
                   name = value;
                 },
               ),
               const SizedBox(height: 10),
               TextField(
-                decoration:
-                    const InputDecoration(hintText: 'Categoría de la despensa'),
+                decoration: const InputDecoration(hintText: 'Descripcion'),
                 onChanged: (value) {
                   category = value;
                 },
@@ -431,14 +474,14 @@ class _PantryPageState extends State<PantryPage> {
             ),
             TextButton(
               onPressed: () {
-                // Agregar despensa a Firestore
+                // Agregar despensa solo a la subcolección en usuarios
                 FirebaseFirestore.instance
                     .collection('usuarios')
                     .doc(widget.userId)
                     .collection('despensas')
                     .add({
                   'nombre': name,
-                  'categoria': category,
+                  'descripcion': category,
                   'icono': selectedIcon.codePoint,
                 }).then((_) {
                   _loadPantries(widget.userId);
