@@ -70,8 +70,8 @@ class _VoicePageState extends State<VoicePage> {
           filteredProducts.add({
             'quantity': currentQuantity,
             'product': currentProduct.trim(),
-            'date': DateTime.now().toString(), // Fecha de ingreso
-            'expiryDate': "" // Fecha de vencimiento vacía
+            'date': DateTime.now().toString(),
+            'expiryDate': ""
           });
         }
         currentQuantity = quantity;
@@ -85,8 +85,8 @@ class _VoicePageState extends State<VoicePage> {
       filteredProducts.add({
         'quantity': currentQuantity,
         'product': currentProduct.trim(),
-        'date': DateTime.now().toString(), // Fecha de ingreso
-        'expiryDate': "" // Fecha de vencimiento vacía
+        'date': DateTime.now().toString(),
+        'expiryDate': ""
       });
     }
 
@@ -132,6 +132,70 @@ class _VoicePageState extends State<VoicePage> {
     return null;
   }
 
+  void _agregarProductosADespensa() async {
+    // Referencia a la colección 'despensas' y al documento con la ID de la despensa
+    CollectionReference despensasRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(user!.uid)
+        .collection('despensas');
+
+    try {
+      // Recorremos cada producto en la lista _products
+      for (var product in _products) {
+        int cantidad = product['quantity'];
+        String nombre = product['product'];
+
+        // Referencia al documento del producto en la colección 'productos'
+        DocumentReference productoDocRef = despensasRef
+            .doc(widget.despensaId)
+            .collection('productos')
+            .doc(nombre);
+
+        // Verificamos si el producto ya existe y obtenemos el valor de stockMinimo si es el caso
+        int stockMinimo = 0; // Valor predeterminado
+        DocumentSnapshot productoSnapshot = await productoDocRef.get();
+        if (productoSnapshot.exists) {
+          stockMinimo = productoSnapshot.get('stockMinimo') ?? 0;
+        }
+
+        // Establecemos el documento del producto en la colección 'productos'
+        await productoDocRef.set({
+          'nombre': nombre,
+          'stockMinimo': stockMinimo,
+        });
+
+        // Añadimos la cantidad como unidades individuales en 'unidades_productos'
+        for (int i = 0; i < cantidad; i++) {
+          await productoDocRef.collection('unidades_productos').add({
+            'fechaIngreso': DateFormat('dd/MM/yyyy').format(DateTime.now()),
+            'fechaVencimiento': '',
+          });
+        }
+
+        // Agregar a 'lista_productos' de 'usuarios' con nombre único
+        await FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(user!.uid)
+            .collection('lista_productos')
+            .doc(nombre)
+            .set({'nombre': nombre}, SetOptions(merge: true));
+      }
+
+      // Confirmación en consola y feedback visual
+      print('Productos añadidos a la despensa con ID: ${widget.despensaId}');
+      print(_products);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Productos añadidos a la despensa exitosamente')),
+      );
+    } catch (e) {
+      print('Error al agregar productos: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al añadir productos: $e')),
+      );
+    }
+  }
+
   void _editarProducto(int index) {
     showDialog(
       context: context,
@@ -154,14 +218,7 @@ class _VoicePageState extends State<VoicePage> {
                 controller: TextEditingController(text: cantidad.toString()),
                 keyboardType: TextInputType.number,
                 onChanged: (value) {
-                  try {
-                    // Intentar convertir el valor a entero
-                    cantidad = int.parse(value);
-                  } catch (e) {
-                    // Si el valor no es válido, poner cantidad a 0 o alguna otra acción
-                    cantidad = 0;
-                    print('Error al convertir la cantidad: $e');
-                  }
+                  cantidad = int.tryParse(value) ?? 0;
                 },
                 decoration: InputDecoration(labelText: 'Cantidad'),
               )
@@ -194,59 +251,6 @@ class _VoicePageState extends State<VoicePage> {
     setState(() {
       _products.removeAt(index);
     });
-  }
-
-  void _agregarProductosADespensa() async {
-    // Referencia a la colección 'despensas' y al documento con la ID de la despensa
-    CollectionReference despensasRef = FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(user!.uid)
-        .collection('despensas');
-
-    try {
-      // Recorremos cada producto en la lista _products
-      for (var product in _products) {
-        // Agregamos el producto `product['quantity']` veces
-        int cantidad = product['quantity'];
-        String nombre = product['product'];
-
-        for (int i = 0; i < cantidad; i++) {
-          await despensasRef
-              .doc(widget
-                  .despensaId) // Documento de la despensa con el ID recibido
-              .collection('productos') // Subcolección 'productos'
-              .add({
-            'nombre': product['product'], // Nombre del producto
-            'fechaIngreso': DateFormat('dd/MM/yyyy')
-                .format(DateTime.now()), // Fecha de ingreso
-            'fechaCaducidad': '', // Dejar vacío, se puede editar después
-            'stockMinimo': 0, // Se agrega el campo stockMinimo con valor 0
-          });
-
-          FirebaseFirestore.instance
-              .collection('usuarios')
-              .doc(user!.uid)
-              .collection('lista_productos')
-              .doc(nombre)
-              .set({'nombre': nombre}, SetOptions(merge: true));
-        }
-      }
-
-      // Confirmación en consola
-      print('Productos añadidos a la despensa con ID: ${widget.despensaId}');
-      print(_products);
-
-      // Feedback visual (por ejemplo, un snackbar o un diálogo)
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Productos añadidos a la despensa exitosamente')),
-      );
-    } catch (e) {
-      print('Error al agregar productos: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al añadir productos: $e')),
-      );
-    }
   }
 
   @override
@@ -306,18 +310,18 @@ class _VoicePageState extends State<VoicePage> {
           ),
           ElevatedButton(
             onPressed: _agregarProductosADespensa,
-            child: const Text('Agregar productos a la despensa'),
+            child: const Text("Agregar productos a la despensa"),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _speechToText.isListening ? _stopListening : _startListening,
+        backgroundColor: Colors.green,
+        onPressed:
+            _speechToText.isNotListening ? _startListening : _stopListening,
         tooltip: 'Escuchar',
         child: Icon(
-          _speechToText.isNotListening ? Icons.mic_off : Icons.mic,
-          color: Colors.white,
+          _speechToText.isNotListening ? Icons.mic : Icons.mic_off,
         ),
-        backgroundColor: Colors.green,
       ),
     );
   }
