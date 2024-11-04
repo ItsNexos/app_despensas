@@ -40,61 +40,52 @@ class _PantryViewState extends State<PantryView> {
         .collection('productos')
         .get()
         .then((QuerySnapshot querySnapshot) {
-      Map<String, List<Map<String, dynamic>>> agrupadosPorNombre = {};
+      List<Map<String, dynamic>> productosList = [];
 
       for (var doc in querySnapshot.docs) {
         final nombre = doc['nombre'];
-        DateTime? fechaCaducidad;
-        DateTime? fechaIngreso;
-        fechaIngreso = DateFormat('dd/MM/yyyy').parse(doc['fechaIngreso']);
+        final stockMinimo = doc['stockMinimo'];
 
-        try {
-          fechaCaducidad = doc['fechaCaducidad'] != "Sin registrar"
-              ? DateFormat('dd/MM/yyyy').parse(doc['fechaCaducidad'])
-              : null;
-        } catch (e) {
-          print('Error al convertir las fechas: $e');
-        }
+        FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(widget.userId)
+            .collection('despensas')
+            .doc(widget.despensaId)
+            .collection('productos')
+            .doc(doc.id)
+            .collection('unidades_productos')
+            .get()
+            .then((QuerySnapshot unidadesSnapshot) {
+          List<Map<String, dynamic>> unidades = [];
 
-        if (!agrupadosPorNombre.containsKey(nombre)) {
-          agrupadosPorNombre[nombre] = [];
-        }
-        agrupadosPorNombre[nombre]?.add({
-          'id': doc.id,
-          'fechaCaducidad': fechaCaducidad != null
-              ? DateFormat('dd/MM/yyyy').format(fechaCaducidad)
-              : 'Sin registrar',
-          'fechaIngreso': DateFormat('dd/MM/yyyy').format(fechaIngreso),
-          'color': fechaCaducidad != null
-              ? _getColorBasedOnExpiry(fechaCaducidad)
-              : Colors.grey,
-          'stockMinimo': doc['stockMinimo'] ?? 0, // Control de stockMinimo
+          for (var unidadDoc in unidadesSnapshot.docs) {
+            final fechaIngreso = unidadDoc['fechaIngreso'];
+            final fechaVencimiento = unidadDoc['fechaVencimiento'];
+
+            unidades.add({
+              'id': unidadDoc.id,
+              'fechaIngreso': fechaIngreso,
+              'fechaVencimiento': fechaVencimiento,
+            });
+          }
+
+          setState(() {
+            productosList.add({
+              'id': doc.id,
+              'nombre': nombre,
+              'stockMinimo': stockMinimo,
+              'unidades': unidades,
+            });
+          });
         });
       }
-
       setState(() {
-        productosAgrupados = agrupadosPorNombre.entries
-            .map((entry) => {'nombre': entry.key, 'productos': entry.value})
-            .toList();
+        productosAgrupados = productosList;
       });
     });
   }
 
-  // Obtener color basado en la fecha de caducidad
-  Color _getColorBasedOnExpiry(DateTime expiryDate) {
-    final now = DateTime.now();
-    final difference = expiryDate.difference(now).inDays;
-
-    if (difference < 0) {
-      return Colors.red; // Rojo para fechas pasadas
-    } else if (difference <= 7) {
-      return Colors.orange; // Naranja para dentro de una semana
-    } else {
-      return Colors.green; // Verde para después de una semana
-    }
-  }
-
-  // Modal para agregar producto manualmente
+  // Agregar nuevo producto con unidades
   void _agregarProductoManual(BuildContext context) {
     final _nombreController = TextEditingController();
     final _cantidadController = TextEditingController();
@@ -105,7 +96,7 @@ class _PantryViewState extends State<PantryView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Agregar nuevo producto '),
+          title: const Text('Agregar nuevo producto'),
           content: SingleChildScrollView(
             child: Column(
               children: [
@@ -122,8 +113,7 @@ class _PantryViewState extends State<PantryView> {
                 TextField(
                   controller: _stockMinimoController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                      labelText: 'Stock mínimo (opcional)'),
+                  decoration: const InputDecoration(labelText: 'Stock mínimo'),
                 ),
                 const SizedBox(height: 10),
                 Row(
@@ -167,19 +157,20 @@ class _PantryViewState extends State<PantryView> {
                 if (_nombreController.text.isNotEmpty &&
                     _cantidadController.text.isNotEmpty &&
                     _fechaCaducidad != null) {
+                  final nombre = _nombreController.text;
                   final cantidad = int.parse(_cantidadController.text);
-                  final ahora = DateTime.now();
-                  final fechaIngreso = DateFormat('dd/MM/yyyy').format(ahora);
-                  final stockMinimo = _stockMinimoController.text.isNotEmpty
-                      ? int.parse(_stockMinimoController.text)
-                      : 0;
+                  final stockMinimo = _stockMinimoController.text.isEmpty
+                      ? 0
+                      : int.parse(_stockMinimoController.text);
+                  final fechaIngreso =
+                      DateFormat('dd/MM/yyyy').format(DateTime.now());
 
                   _guardarProducto(
-                    _nombreController.text,
+                    nombre,
                     cantidad,
-                    _fechaCaducidad!,
-                    fechaIngreso,
                     stockMinimo,
+                    fechaIngreso,
+                    _fechaCaducidad!,
                   );
                   Navigator.of(context).pop();
                 }
@@ -193,59 +184,36 @@ class _PantryViewState extends State<PantryView> {
   }
 
   // Guardar producto en Firestore
-  void _guardarProducto(String nombre, int cantidad, DateTime fechaCaducidad,
-      String fechaIngreso, int? stockMinimo) async {
-    String fechaV = DateFormat('dd/MM/yyyy').format(fechaCaducidad);
-    for (int i = 0; i < cantidad; i++) {
-      final producto = {
-        'nombre': nombre,
-        'fechaCaducidad': fechaV,
-        'fechaIngreso': fechaIngreso,
-        'stockMinimo': stockMinimo,
-      };
-
-      FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(widget.userId)
-          .collection('despensas')
-          .doc(widget.despensaId)
-          .collection('productos')
-          .add(producto);
-
-      FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(widget.userId)
-          .collection('lista_productos')
-          .doc(nombre)
-          .set({
-        'nombre': nombre,
-      }, SetOptions(merge: true));
-    }
-    _loadProductos();
-  }
-
-  void _actualizarProducto(String id, String nuevoNombre,
-      String nuevaFechaCaducidad, int? nuevoStockMinimo) {
-    FirebaseFirestore.instance
+  void _guardarProducto(String nombre, int cantidad, int stockMinimo,
+      String fechaIngreso, DateTime fechaVencimiento) async {
+    final productoRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')
-        .doc(id)
-        .update({
-      'nombre': nuevoNombre,
-      'fechaCaducidad': nuevaFechaCaducidad,
-      'stockMinimo': nuevoStockMinimo,
-    }).then((_) {
-      _loadProductos();
+        .doc(nombre);
+
+    // Guardar información del producto
+    await productoRef.set({
+      'nombre': nombre,
+      'stockMinimo': stockMinimo,
     });
+
+    // Guardar cada unidad del producto
+    for (int i = 0; i < cantidad; i++) {
+      await productoRef.collection('unidades_productos').add({
+        'fechaIngreso': fechaIngreso,
+        'fechaVencimiento': DateFormat('dd/MM/yyyy').format(fechaVencimiento),
+      });
+    }
+
+    _loadProductos();
   }
 
+  // Editar producto existente
   void _editarProducto(BuildContext context, Map<String, dynamic> producto) {
     final _nombreController = TextEditingController(text: producto['nombre']);
-    final _fechaCaducidadController =
-        TextEditingController(text: producto['fechaCaducidad']);
     final _stockMinimoController =
         TextEditingController(text: producto['stockMinimo'].toString());
 
@@ -254,43 +222,18 @@ class _PantryViewState extends State<PantryView> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Editar Producto'),
-          content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _nombreController,
-                  decoration:
-                      const InputDecoration(labelText: 'Nombre del Producto'),
-                ),
-                TextField(
-                  controller: _fechaCaducidadController,
-                  decoration:
-                      const InputDecoration(labelText: 'Fecha de Vencimiento'),
-                  readOnly: true,
-                  onTap: () async {
-                    DateTime? pickedDate = await showDatePicker(
-                      context: context,
-                      initialDate: producto['fechaCaducidad'] != 'Sin registrar'
-                          ? DateFormat('dd/MM/yyyy')
-                              .parse(producto['fechaCaducidad'])
-                          : DateTime.now(),
-                      firstDate: DateTime(2020),
-                      lastDate: DateTime(2100),
-                    );
-                    if (pickedDate != null) {
-                      _fechaCaducidadController.text =
-                          DateFormat('dd/MM/yyyy').format(pickedDate);
-                    }
-                  },
-                ),
-                TextField(
-                  controller: _stockMinimoController,
-                  decoration: const InputDecoration(
-                      labelText: 'Stock Mínimo (opcional)'),
-                  keyboardType: TextInputType.number,
-                ),
-              ],
-            ),
+          content: Column(
+            children: [
+              TextField(
+                controller: _nombreController,
+                decoration: const InputDecoration(labelText: 'Nombre'),
+              ),
+              TextField(
+                controller: _stockMinimoController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Stock Mínimo'),
+              ),
+            ],
           ),
           actions: [
             TextButton(
@@ -298,18 +241,26 @@ class _PantryViewState extends State<PantryView> {
               child: const Text('Cancelar'),
             ),
             ElevatedButton(
-              onPressed: () {
+              onPressed: () async {
                 final nuevoNombre = _nombreController.text;
-                final nuevaFechaCaducidad = _fechaCaducidadController.text;
-                final nuevoStockMinimo = _stockMinimoController.text.isNotEmpty
-                    ? int.parse(_stockMinimoController.text)
-                    : null;
+                final nuevoStockMinimo = int.parse(_stockMinimoController.text);
 
-                _actualizarProducto(producto['id'], nuevoNombre,
-                    nuevaFechaCaducidad, nuevoStockMinimo);
+                await FirebaseFirestore.instance
+                    .collection('usuarios')
+                    .doc(widget.userId)
+                    .collection('despensas')
+                    .doc(widget.despensaId)
+                    .collection('productos')
+                    .doc(producto['id'])
+                    .update({
+                  'nombre': nuevoNombre,
+                  'stockMinimo': nuevoStockMinimo,
+                });
+
                 Navigator.of(context).pop();
+                _loadProductos();
               },
-              child: const Text('Guardar Cambios'),
+              child: const Text('Guardar'),
             ),
           ],
         );
@@ -317,18 +268,53 @@ class _PantryViewState extends State<PantryView> {
     );
   }
 
+  // Editar la fecha de vencimiento de una unidad específica
+  void _editarFechaVencimiento(BuildContext context, String productoId,
+      Map<String, dynamic> unidad) async {
+    DateTime? nuevaFecha;
+
+    nuevaFecha = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+    );
+
+    if (nuevaFecha != null) {
+      await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.userId)
+          .collection('despensas')
+          .doc(widget.despensaId)
+          .collection('productos')
+          .doc(productoId)
+          .collection('unidades_productos')
+          .doc(unidad['id'])
+          .update({
+        'fechaVencimiento': DateFormat('dd/MM/yyyy').format(nuevaFecha),
+      });
+
+      _loadProductos();
+    }
+  }
+
+  // Eliminar producto completo
   void _eliminarProducto(String productoId) {
-    FirebaseFirestore.instance
+    final productoRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')
-        .doc(productoId)
-        .delete()
-        .then((_) {
-      _loadProductos();
+        .doc(productoId);
+
+    productoRef.collection('unidades_productos').get().then((snapshot) {
+      for (var doc in snapshot.docs) {
+        doc.reference.delete();
+      }
     });
+
+    productoRef.delete().then((_) => _loadProductos());
   }
 
   void _navigateToVoicePage() async {
@@ -350,56 +336,78 @@ class _PantryViewState extends State<PantryView> {
         itemCount: productosAgrupados.length,
         itemBuilder: (context, index) {
           final producto = productosAgrupados[index];
-
           final nombre = producto['nombre'];
-          final productos = producto['productos'] as List<Map<String, dynamic>>;
-          final cantidad = productos.length;
+          final stockMinimo = producto['stockMinimo'];
+          final unidades = producto['unidades'];
 
           return ExpansionTile(
-            title: Text('$nombre ($cantidad unidades)',
-                style: TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w600,
-                )),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  '$nombre (Stock mínimo: $stockMinimo)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.edit),
+                      onPressed: () {
+                        _editarProducto(context, producto);
+                      },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.delete),
+                      onPressed: () {
+                        _eliminarProducto(producto['id']);
+                      },
+                    ),
+                  ],
+                ),
+              ],
+            ),
             initiallyExpanded: expandedStates[nombre] ?? false,
             onExpansionChanged: (isExpanded) {
               setState(() {
                 expandedStates[nombre] = isExpanded;
               });
             },
-            children: productos.map<Widget>((productoIndividual) {
-              final fechaCaducidad = productoIndividual['fechaCaducidad'];
-              final fechaIngreso = productoIndividual['fechaIngreso'];
-              final stockMinimo = productoIndividual['stockMinimo'];
-
-              return ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: productoIndividual['color'],
-                ),
-                title: Text('Fecha de caducidad: $fechaCaducidad',
-                    style: TextStyle(color: productoIndividual['color'])),
-                subtitle: Text(
-                  'Ingreso: ${fechaIngreso ?? 'Sin registrar'}\n'
-                  'Stock Minimo: ${stockMinimo}',
-                  style: TextStyle(color: producto['color']),
-                ),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () =>
-                          _editarProducto(context, productoIndividual),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () =>
-                          _eliminarProducto(productoIndividual['id']),
-                    ),
-                  ],
-                ),
-              );
-            }).toList(),
+            children: [
+              ...unidades.map<Widget>((unidad) {
+                return ListTile(
+                  title: Text('Ingreso: ${unidad['fechaIngreso']}'),
+                  subtitle: Text('Vencimiento: ${unidad['fechaVencimiento']}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.edit),
+                        onPressed: () {
+                          _editarFechaVencimiento(
+                              context, producto['id'], unidad);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          FirebaseFirestore.instance
+                              .collection('usuarios')
+                              .doc(widget.userId)
+                              .collection('despensas')
+                              .doc(widget.despensaId)
+                              .collection('productos')
+                              .doc(producto['id'])
+                              .collection('unidades_productos')
+                              .doc(unidad['id'])
+                              .delete()
+                              .then((_) => _loadProductos());
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+            ],
           );
         },
       ),
