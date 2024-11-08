@@ -1,3 +1,4 @@
+import 'package:app_despensas/pages/product_card.dart';
 import 'package:app_despensas/pages/voice_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
@@ -21,76 +22,97 @@ class PantryView extends StatefulWidget {
 }
 
 class _PantryViewState extends State<PantryView> {
+  List<Map<String, dynamic>> products = [];
+  List<Map<String, dynamic>> filteredProducts = [];
   List<Map<String, dynamic>> productosAgrupados = [];
   Map<String, bool> expandedStates = {};
+  TextEditingController searchController = TextEditingController();
+
+  // Nuevo
+  List<String> selectedProductIds = [];
 
   @override
   void initState() {
     super.initState();
     _loadProductos();
+    searchController.addListener(_filterProducts);
+  }
+
+// Para buscar productos
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   // Cargar productos agrupados por nombre
-  void _loadProductos() async {
-    FirebaseFirestore.instance
+  Future<void> _loadProductos() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
         .collection('despensas')
         .doc(widget.despensaId)
         .collection('productos')
-        .get()
-        .then((QuerySnapshot querySnapshot) {
-      List<Map<String, dynamic>> productosList = [];
+        .get();
 
-      for (var doc in querySnapshot.docs) {
-        final nombre = doc['nombre'];
-        final stockMinimo = doc['stockMinimo'];
+    List<Map<String, dynamic>> productosList = [];
 
-        FirebaseFirestore.instance
-            .collection('usuarios')
-            .doc(widget.userId)
-            .collection('despensas')
-            .doc(widget.despensaId)
-            .collection('productos')
-            .doc(doc.id)
-            .collection('unidades_productos')
-            .get()
-            .then((QuerySnapshot unidadesSnapshot) {
-          List<Map<String, dynamic>> unidades = [];
+    for (var doc in querySnapshot.docs) {
+      final nombre = doc['nombre'];
+      final stockMinimo = doc['stockMinimo'];
 
-          for (var unidadDoc in unidadesSnapshot.docs) {
-            final fechaIngreso = unidadDoc['fechaIngreso'];
-            final fechaVencimiento = unidadDoc['fechaVencimiento'];
+      QuerySnapshot unidadesSnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(widget.userId)
+          .collection('despensas')
+          .doc(widget.despensaId)
+          .collection('productos')
+          .doc(doc.id)
+          .collection('unidades_productos')
+          .get();
 
-            unidades.add({
-              'id': unidadDoc.id,
-              'fechaIngreso': fechaIngreso,
-              'fechaVencimiento': fechaVencimiento,
-            });
-          }
+      List<Map<String, dynamic>> unidades = unidadesSnapshot.docs
+          .map((unidadDoc) => {
+                'id': unidadDoc.id,
+                'fechaIngreso': unidadDoc['fechaIngreso'],
+                'fechaVencimiento': unidadDoc['fechaVencimiento'],
+              })
+          .toList();
 
-          setState(() {
-            productosList.add({
-              'id': doc.id,
-              'nombre': nombre,
-              'stockMinimo': stockMinimo,
-              'unidades': unidades,
-            });
-          });
-        });
-      }
+      productosList.add({
+        'id': doc.id,
+        'nombre': nombre,
+        'stockMinimo': stockMinimo,
+        'unidades': unidades,
+      });
+    }
+
+    if (mounted) {
       setState(() {
         productosAgrupados = productosList;
+        products = productosList;
+        filteredProducts = productosList;
       });
+    }
+  }
+
+  void _filterProducts() {
+    String query = searchController.text.toLowerCase();
+    setState(() {
+      filteredProducts = products.where((product) {
+        return product['nombre'].toLowerCase().contains(query);
+      }).toList();
     });
   }
 
-  // Agregar nuevo producto con unidades
+  // Modificación del método _agregarProductoManual
   void _agregarProductoManual(BuildContext context) {
     final _nombreController = TextEditingController();
     final _cantidadController = TextEditingController();
     final _stockMinimoController = TextEditingController();
-    DateTime? _fechaCaducidad;
+    String _fechaCaducidad =
+        ''; // Inicializar como string vacío en lugar de DateTime?
+    final _formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -98,29 +120,64 @@ class _PantryViewState extends State<PantryView> {
         return AlertDialog(
           title: const Text('Agregar nuevo producto'),
           content: SingleChildScrollView(
-            child: Column(
-              children: [
-                TextField(
-                  controller: _nombreController,
-                  decoration:
-                      const InputDecoration(labelText: 'Nombre del Producto'),
-                ),
-                TextField(
-                  controller: _cantidadController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Cantidad'),
-                ),
-                TextField(
-                  controller: _stockMinimoController,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Stock mínimo'),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Text('Fecha de vencimiento: '),
-                    Expanded(
-                      child: TextButton(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                children: [
+                  TextFormField(
+                    controller: _nombreController,
+                    decoration: const InputDecoration(
+                      labelText: 'Nombre del Producto',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese un nombre';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _cantidadController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Cantidad',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese una cantidad';
+                      }
+                      final cantidad = int.tryParse(value);
+                      if (cantidad == null) {
+                        return 'Por favor ingrese un número válido';
+                      }
+                      if (cantidad <= 0) {
+                        return 'La cantidad debe ser mayor a 0';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller: _stockMinimoController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Stock mínimo',
+                    ),
+                    validator: (value) {
+                      if (value != null && value.isNotEmpty) {
+                        final stock = int.tryParse(value);
+                        if (stock == null || stock < 0) {
+                          return 'El stock mínimo debe ser un número válido mayor o igual a 0';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Fecha de vencimiento: '),
+                      TextButton(
                         onPressed: () async {
                           DateTime? pickedDate = await showDatePicker(
                             context: context,
@@ -130,21 +187,31 @@ class _PantryViewState extends State<PantryView> {
                           );
                           if (pickedDate != null) {
                             setState(() {
-                              _fechaCaducidad = pickedDate;
+                              _fechaCaducidad =
+                                  DateFormat('dd/MM/yyyy').format(pickedDate);
                             });
                           }
                         },
                         child: Text(
-                          _fechaCaducidad == null
-                              ? 'Seleccionar'
-                              : DateFormat('dd/MM/yyyy')
-                                  .format(_fechaCaducidad!),
+                          _fechaCaducidad.isEmpty
+                              ? 'Opcional'
+                              : _fechaCaducidad,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      if (_fechaCaducidad.isNotEmpty)
+                        IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _fechaCaducidad =
+                                  ''; // Reinicia a un string vacío
+                            });
+                          },
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
           actions: [
@@ -154,9 +221,7 @@ class _PantryViewState extends State<PantryView> {
             ),
             ElevatedButton(
               onPressed: () {
-                if (_nombreController.text.isNotEmpty &&
-                    _cantidadController.text.isNotEmpty &&
-                    _fechaCaducidad != null) {
+                if (_formKey.currentState!.validate()) {
                   final nombre = _nombreController.text;
                   final cantidad = int.parse(_cantidadController.text);
                   final stockMinimo = _stockMinimoController.text.isEmpty
@@ -170,7 +235,7 @@ class _PantryViewState extends State<PantryView> {
                     cantidad,
                     stockMinimo,
                     fechaIngreso,
-                    _fechaCaducidad!,
+                    _fechaCaducidad, // Enviar string vacío si no se elige fecha
                   );
                   Navigator.of(context).pop();
                 }
@@ -183,9 +248,9 @@ class _PantryViewState extends State<PantryView> {
     );
   }
 
-  // Guardar producto en Firestore
+// Modificación del método _guardarProducto para aceptar fecha de vencimiento opcional
   void _guardarProducto(String nombre, int cantidad, int stockMinimo,
-      String fechaIngreso, DateTime fechaVencimiento) async {
+      String fechaIngreso, String fechaVencimiento) async {
     final productoRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
@@ -202,10 +267,13 @@ class _PantryViewState extends State<PantryView> {
 
     // Guardar cada unidad del producto
     for (int i = 0; i < cantidad; i++) {
-      await productoRef.collection('unidades_productos').add({
+      Map<String, dynamic> unidadData = {
         'fechaIngreso': fechaIngreso,
-        'fechaVencimiento': DateFormat('dd/MM/yyyy').format(fechaVencimiento),
-      });
+      };
+
+      unidadData['fechaVencimiento'] = fechaVencimiento;
+
+      await productoRef.collection('unidades_productos').add(unidadData);
     }
 
     _loadProductos();
@@ -329,92 +397,75 @@ class _PantryViewState extends State<PantryView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
-        title: Text(widget.despensaNombre),
+        backgroundColor: const Color(0xFFF4F6F8),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF124580)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          widget.despensaNombre,
+          style: const TextStyle(
+            color: Color(0xFF124580),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
       ),
-      body: ListView.builder(
-        itemCount: productosAgrupados.length,
-        itemBuilder: (context, index) {
-          final producto = productosAgrupados[index];
-          final nombre = producto['nombre'];
-          final stockMinimo = producto['stockMinimo'];
-          final unidades = producto['unidades'];
-
-          return ExpansionTile(
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '$nombre (Stock mínimo: $stockMinimo)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+      body: Column(
+        children: [
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF5D83B1),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                controller: searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Buscar producto',
+                  hintStyle: TextStyle(color: Colors.white),
+                  prefixIcon: Icon(Icons.search, color: Colors.white),
+                  border: InputBorder.none,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                 ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.edit),
-                      onPressed: () {
-                        _editarProducto(context, producto);
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete),
-                      onPressed: () {
-                        _eliminarProducto(producto['id']);
-                      },
-                    ),
-                  ],
-                ),
-              ],
+                style: const TextStyle(color: Colors.white),
+                textAlignVertical: TextAlignVertical.center,
+              ),
             ),
-            initiallyExpanded: expandedStates[nombre] ?? false,
-            onExpansionChanged: (isExpanded) {
-              setState(() {
-                expandedStates[nombre] = isExpanded;
-              });
-            },
-            children: [
-              ...unidades.map<Widget>((unidad) {
-                return ListTile(
-                  title: Text('Ingreso: ${unidad['fechaIngreso']}'),
-                  subtitle: Text('Vencimiento: ${unidad['fechaVencimiento']}'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.edit),
-                        onPressed: () {
-                          _editarFechaVencimiento(
-                              context, producto['id'], unidad);
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () {
-                          FirebaseFirestore.instance
-                              .collection('usuarios')
-                              .doc(widget.userId)
-                              .collection('despensas')
-                              .doc(widget.despensaId)
-                              .collection('productos')
-                              .doc(producto['id'])
-                              .collection('unidades_productos')
-                              .doc(unidad['id'])
-                              .delete()
-                              .then((_) => _loadProductos());
-                        },
-                      ),
-                    ],
-                  ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredProducts.length,
+              itemBuilder: (context, index) {
+                return ProductCard(
+                  product: filteredProducts[index],
+                  onDeleteProduct: (id) {
+                    _eliminarProducto(id);
+                    _loadProductos(); // Recargar después de eliminar
+                  },
+                  onEditProduct: _editarProducto,
+                  onEditExpiration: _editarFechaVencimiento,
+                  onUnitDeleted:
+                      _loadProductos, // Recargar después de eliminar una unidad
+                  userId: widget.userId,
+                  despensaId: widget.despensaId,
                 );
-              }).toList(),
-            ],
-          );
-        },
+              },
+            ),
+          ),
+        ],
       ),
       floatingActionButton: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,
-        backgroundColor: Theme.of(context).primaryColor,
+        backgroundColor: const Color(0xFF2C5B92),
         foregroundColor: Colors.white,
         children: [
           SpeedDialChild(

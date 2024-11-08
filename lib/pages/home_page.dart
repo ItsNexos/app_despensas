@@ -57,6 +57,7 @@ class _HomePageState extends State<HomePage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFF124580),
+      drawer: _buildDrawer(username),
       body: Stack(
         children: [
           // Sección superior azul
@@ -65,7 +66,7 @@ class _HomePageState extends State<HomePage> {
             left: 0,
             right: 0,
             height:
-                MediaQuery.of(context).size.height * 0.22, //altura del texto
+                MediaQuery.of(context).size.height * 0.20, //altura del texto
             child: Container(
               color: const Color(0xFF124580),
               padding:
@@ -120,7 +121,7 @@ class _HomePageState extends State<HomePage> {
           // Contenedor blanco redondeado
           Positioned(
             top:
-                MediaQuery.of(context).size.height * 0.17, //posicion del blanco
+                MediaQuery.of(context).size.height * 0.15, //posicion del blanco
             child: Container(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height,
@@ -136,7 +137,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 10),
 
                     // Botón de Compras
                     _buildMainButton(
@@ -152,7 +153,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     // Botón de Cocinar
                     _buildMainButton(
@@ -167,19 +168,19 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 18),
 
                     // Sección de Despensa
                     const Text(
                       'Acceso directo despensa',
                       style: TextStyle(
-                        fontSize: 20,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                         color: Color.fromARGB(255, 71, 79, 83),
                       ),
                     ),
 
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
 
                     Container(
                       decoration: BoxDecoration(
@@ -198,16 +199,36 @@ class _HomePageState extends State<HomePage> {
                             );
                           }
                           pantryList = snapshot.data!;
+
+                          // Depuración: Imprime la lista de despensas y el valor de selectedPantry
+                          print("Lista de despensas: $pantryList");
+                          print(
+                              "Valor de selectedPantry antes de verificar: $selectedPantry");
+
+                          // Asegúrate de que selectedPantry tenga un valor válido
                           if (pantryList.isNotEmpty && selectedPantry == null) {
-                            selectedPantry = pantryList[0];
+                            selectedPantry = pantryList[
+                                0]; // Si no hay ninguno seleccionado, selecciona el primer elemento
                           }
+
+                          // Verifica si el valor de selectedPantry está en la lista
+                          if (selectedPantry != null &&
+                              !pantryList.contains(selectedPantry)) {
+                            // Si no está en la lista, selecciona el primero de la lista
+                            selectedPantry =
+                                pantryList.isNotEmpty ? pantryList[0] : null;
+                          }
+
+                          // Imprimir si hay un valor válido para selectedPantry
+                          print(
+                              "Valor de selectedPantry después de la verificación: $selectedPantry");
 
                           return DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
                               value: selectedPantry,
                               isExpanded: true,
                               padding:
-                                  const EdgeInsets.symmetric(horizontal: 16),
+                                  const EdgeInsets.symmetric(horizontal: 14),
                               hint: const Text('Seleccione su despensa'),
                               items: pantryList.map((String value) {
                                 return DropdownMenuItem<String>(
@@ -245,9 +266,9 @@ class _HomePageState extends State<HomePage> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       crossAxisCount: 2,
-                      mainAxisSpacing: 20,
-                      crossAxisSpacing: 35,
-                      childAspectRatio: 1.05,
+                      mainAxisSpacing: 15,
+                      crossAxisSpacing: 40,
+                      childAspectRatio: 1.13,
                       padding: const EdgeInsets.symmetric(horizontal: 20),
                       children: [
                         _buildActionCard(
@@ -295,6 +316,110 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  // Método para construir el Drawer (menú lateral)
+  Widget _buildDrawer(String username) {
+    return Drawer(
+      child: Container(
+        color: Color(0xFF124580), // Fondo azul
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            UserAccountsDrawerHeader(
+              accountName: Text(
+                username,
+                style:
+                    TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+              ),
+              accountEmail: Text(
+                _user?.email ?? '',
+                style: TextStyle(color: Colors.white70),
+              ),
+              currentAccountPicture: CircleAvatar(
+                backgroundColor: Colors.white,
+                child: Icon(
+                  Icons.person,
+                  color: Color(0xFF124580),
+                  size: 50,
+                ),
+              ),
+              decoration: BoxDecoration(
+                color: Color(0xFF124580),
+              ),
+            ),
+            Divider(color: Colors.white54),
+            _buildDrawerItem(
+              icon: Icons.home,
+              text: 'Inicio',
+              onTap: () {
+                Navigator.pop(context);
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.person,
+              text: 'Mi perfil',
+              onTap: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (context) => UserPage()));
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.info_outline,
+              text: 'Cómo funciona DespensApp',
+              onTap: () {
+                // Acción para "Cómo funciona DespensApp"
+              },
+            ),
+            _buildDrawerItem(
+              icon: Icons.help_outline,
+              text: 'Preguntas frecuentes',
+              onTap: () {
+                // Acción para "Preguntas frecuentes"
+              },
+            ),
+            Divider(color: Colors.white54),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await FirebaseAuth.instance.signOut();
+                  Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                    (route) => false,
+                  );
+                },
+                icon: Icon(Icons.exit_to_app),
+                label: Text("Cerrar sesión"),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.transparent,
+                  foregroundColor: Colors.white,
+                  side: BorderSide(color: Colors.white),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Método helper para crear cada elemento del menú lateral
+  Widget _buildDrawerItem(
+      {required IconData icon,
+      required String text,
+      required GestureTapCallback onTap}) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        text,
+        style: TextStyle(color: Colors.white),
+      ),
+      onTap: onTap,
+    );
+  }
+
   Widget _buildMainButton({
     required IconData icon,
     required String title,
@@ -328,7 +453,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.w600,
                       color: Color(0xFF3A4247).withOpacity(0.9),
                     ),
@@ -377,9 +502,9 @@ class _HomePageState extends State<HomePage> {
               Icon(
                 icon,
                 color: color,
-                size: 50,
+                size: 44,
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               Text(
                 label,
                 textAlign: TextAlign.center,
@@ -387,7 +512,7 @@ class _HomePageState extends State<HomePage> {
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                   color: Color(0xFF3A4247),
-                  height: 1.5,
+                  height: 1.4,
                 ),
               ),
             ],
@@ -411,14 +536,15 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       child: BottomNavigationBar(
-        currentIndex: 2,
+        currentIndex: 0,
         selectedItemColor: const Color(0xFF124580).withOpacity(0.8),
         unselectedItemColor: const Color(0xFF575D65).withOpacity(0.85),
         backgroundColor: Colors.white,
         elevation: 1, // Quitamos la elevación predeterminada
         showUnselectedLabels: true,
         selectedLabelStyle: const TextStyle(
-          fontWeight:FontWeight.w800, // Letra más negrita para el item seleccionado
+          fontWeight:
+              FontWeight.w800, // Letra más negrita para el item seleccionado
           fontSize: 12,
         ),
         unselectedLabelStyle: const TextStyle(
@@ -428,16 +554,12 @@ class _HomePageState extends State<HomePage> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.account_circle),
-            label: 'Perfil',
+            icon: Icon(Icons.home),
+            label: 'Inicio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.kitchen_outlined),
             label: 'Despensas',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.home),
-            label: 'Inicio',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.book_outlined),
@@ -450,12 +572,6 @@ class _HomePageState extends State<HomePage> {
         ],
         onTap: (index) {
           switch (index) {
-            case 0:
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => UserPage()),
-              );
-              break;
             case 1:
               if (_user != null) {
                 Navigator.push(
@@ -466,13 +582,15 @@ class _HomePageState extends State<HomePage> {
                 );
               }
               break;
-            case 3:
+            case 2:
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const RecipesPage()),
+                MaterialPageRoute(
+                  builder: (context) => RecipesPage(),
+                ),
               );
               break;
-            case 4:
+            case 3:
               Navigator.push(
                 context,
                 MaterialPageRoute(

@@ -70,8 +70,8 @@ class _UserPageState extends State<UserPage> {
                           const SizedBox(height: 8),
                           // Avatar del usuario
                           Container(
-                            width: 120,
-                            height: 120,
+                            width: 110,
+                            height: 110,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               color: Color(0XFF6DBDFF),
@@ -82,17 +82,23 @@ class _UserPageState extends State<UserPage> {
                             ),
                             child: const Icon(
                               Icons.person,
-                              size: 45,
+                              size: 60,
                               color: Colors.white,
                             ),
                           ),
-                          const SizedBox(height: 15),
-                          Text(
-                            _user?.displayName ?? 'Usuario',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
+                          const SizedBox(height: 18),
+                          // Dentro del build de UserPage
+                          Flexible(
+                            child: Text(
+                              _user?.displayName ?? 'Usuario',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow
+                                  .ellipsis, // Esta línea trunca el texto si es muy largo
+                              maxLines: 1, // Mantenerlo en una sola línea
                             ),
                           ),
                         ],
@@ -102,7 +108,7 @@ class _UserPageState extends State<UserPage> {
                 ),
                 // Contenedor blanco redondeado
                 Positioned(
-                  top: MediaQuery.of(context).size.height * 0.32,
+                  top: MediaQuery.of(context).size.height * 0.33,
                   child: Container(
                     width: MediaQuery.of(context).size.width,
                     height: MediaQuery.of(context).size.height,
@@ -153,8 +159,7 @@ class _UserPageState extends State<UserPage> {
                                 // Implementar edición de perfil
                               },
                               style: ElevatedButton.styleFrom(
-                                backgroundColor:
-                                    const Color(0xFF37679E),
+                                backgroundColor: const Color(0xFF37679E),
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 15),
                                 shape: RoundedRectangleBorder(
