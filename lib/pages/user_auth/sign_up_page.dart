@@ -389,7 +389,7 @@ class _SignUpPageState extends State<SignUpPage> {
                 ? Color(0xFFE4352A).withOpacity(0.8) // Color de error
                 : Color(0xFF6DBDFF), // Color al enfocarse
           ),
-        ),
+         ),
       ),
     );
   }

@@ -49,17 +49,24 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text,
         password: _passwordController.text,
       );
+
+      if (!mounted)
+        return; // Verificación para evitar uso de context si el widget fue desmontado
+
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => HomePage()),
         (Route<dynamic> route) => false,
       );
     } catch (e) {
-      _showErrorDialog();
+      if (mounted) {
+        _showErrorDialog();
+      }
     }
   }
 
   // Modal para mostrar error de credenciales
   void _showErrorDialog() {
+    if(!mounted) return; 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -79,11 +86,11 @@ class _LoginPageState extends State<LoginPage> {
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text("Aceptar",
-            style: TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w600,
-              color: Color(0xFF124580).withOpacity(0.85),
-            )),
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF124580).withOpacity(0.85),
+                )),
           ),
         ],
       ),
@@ -172,12 +179,16 @@ class _LoginPageState extends State<LoginPage> {
                         // Color campo erroneo o correcto
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color: _emailError ? Color(0xFFE4352A).withOpacity(0.8) : Color(0xFFA3B3B9),
+                            color: _emailError
+                                ? Color(0xFFE4352A).withOpacity(0.8)
+                                : Color(0xFFA3B3B9),
                           ),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color: _emailError ? Color(0xFFE4352A).withOpacity(0.8)  : Color(0xFF6DBDFF),
+                            color: _emailError
+                                ? Color(0xFFE4352A).withOpacity(0.8)
+                                : Color(0xFF6DBDFF),
                           ),
                         ),
                       ),
@@ -206,14 +217,16 @@ class _LoginPageState extends State<LoginPage> {
                             : null,
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color:
-                                _passwordError ? Color(0xFFE4352A).withOpacity(0.8) : Color(0xFFA3B3B9),
+                            color: _passwordError
+                                ? Color(0xFFE4352A).withOpacity(0.8)
+                                : Color(0xFFA3B3B9),
                           ),
                         ),
                         focusedBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
-                            color:
-                                _passwordError ? Color(0xFFE4352A).withOpacity(0.8) : Color(0xFF6DBDFF),
+                            color: _passwordError
+                                ? Color(0xFFE4352A).withOpacity(0.8)
+                                : Color(0xFF6DBDFF),
                           ),
                         ),
                         suffixIcon: IconButton(

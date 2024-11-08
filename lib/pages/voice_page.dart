@@ -256,11 +256,20 @@ class _VoicePageState extends State<VoicePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFFF4F6F8),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF124580)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
         title: const Text(
           'Dictar productos',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(
+            color: Color(0xFF124580),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
         ),
       ),
       body: Column(
@@ -303,19 +312,42 @@ class _VoicePageState extends State<VoicePage> {
                       );
                     },
                   )
-                : const Text(
-                    "No se ha reconocido ningún producto.",
-                    style: TextStyle(fontSize: 22),
+                : Padding(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16.0), // Margen izquierdo y derecho
+                    child: const Text(
+                      "No se ha reconocido ningún producto.",
+                      style: TextStyle(fontSize: 22),
+                    ),
                   ),
           ),
-          ElevatedButton(
-            onPressed: _agregarProductosADespensa,
-            child: const Text("Agregar productos a la despensa"),
+          Padding(
+            padding: const EdgeInsets.only(
+                bottom: 120), // Ajusta el espacio inferior
+            child: ElevatedButton.icon(
+              onPressed: _agregarProductosADespensa,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF2C5B92), // Color de fondo
+                foregroundColor: Colors.white, // Color de las letras
+                minimumSize: const Size(
+                    0, 50), // Solo altura de 40, ancho ajustado automáticamente
+                shape: RoundedRectangleBorder(
+                  borderRadius:
+                      BorderRadius.circular(12), // Bordes redondeados de 10
+                ),
+                elevation: 6, // Ajusta la intensidad de la sombra
+                shadowColor: Colors.black
+                    .withOpacity(0.3), // Color y opacidad de la sombra
+              ),
+              icon: const Icon(Icons.add), // Icono antes del texto
+              label: const Text("Agregar productos a la despensa"),
+            ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.green,
+        backgroundColor: const Color(0xFF2C5B92),
+        foregroundColor: Colors.white,
         onPressed:
             _speechToText.isNotListening ? _startListening : _stopListening,
         tooltip: 'Escuchar',
