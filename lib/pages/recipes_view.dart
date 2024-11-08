@@ -76,70 +76,72 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
       appBar: AppBar(
         title: Text(recipeData['titulo'] ?? 'Receta'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              recipeData['titulo'] ?? '',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "Categorías: ${recipeData['categorias']?.join(', ') ?? 'Sin categoría'}",
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              "Ingredientes:",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            ...ingredients.map((ingredient) => Text(
-                  "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
-                  style: TextStyle(fontSize: 18),
-                )),
-            const SizedBox(height: 20),
-            Text(
-              "Preparación:",
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              recipeData['preparacion'] ?? '',
-              style: TextStyle(fontSize: 18),
-            ),
-            const SizedBox(height: 20),
-            // Botones en la parte inferior
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                ElevatedButton(
-                  onPressed: _prepareRecipeModal,
-                  child: const Text("Preparar receta"),
-                ),
-                Row(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RecipeEditPage(
-                              recipeId: widget.recipeId,
-                              user: widget.user,
+      body: Scrollbar(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                recipeData['titulo'] ?? '',
+                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                "Categorías: ${recipeData['categorias']?.join(', ') ?? 'Sin categoría'}",
+                style: TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Ingredientes:",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              ...ingredients.map((ingredient) => Text(
+                    "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
+                    style: TextStyle(fontSize: 18),
+                  )),
+              const SizedBox(height: 20),
+              Text(
+                "Preparación:",
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                recipeData['preparacion'] ?? '',
+                style: TextStyle(fontSize: 18),
+              ),
+              const SizedBox(height: 20),
+              // Botones en la parte inferior
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: _prepareRecipeModal,
+                    child: const Text("Preparar receta"),
+                  ),
+                  Row(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => RecipeEditPage(
+                                recipeId: widget.recipeId,
+                                user: widget.user,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
