@@ -38,6 +38,7 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
     setState(() {
       if (recipeDoc.data() != null) {
         recipeData = recipeDoc.data()!;
+        recipeData['porciones'] = recipeDoc.data()!['porciones'] ?? 1;
       } else {
         recipeData = {};
         print("recipeDoc.data() es null");
@@ -48,7 +49,8 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
             .map((doc) => {
                   'nombre': doc['nombre'] ?? 'Desconocido',
                   'cantidad': doc['cantidad'] ?? 0,
-                  'medida': doc['medida'] ?? 'unidades'
+                  'medida': doc['medida'] ?? 'unidades',
+                  'principal': doc['principal'] ?? false,
                 })
             .toList();
       } else {
@@ -91,16 +93,33 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
                 "Categorías: ${recipeData['categorias']?.join(', ') ?? 'Sin categoría'}",
                 style: TextStyle(fontSize: 16),
               ),
+              const SizedBox(height: 10),
+              Text(
+                "Porciones: ${recipeData['porciones']}", // Mostrar porciones
+                style: TextStyle(fontSize: 16),
+              ),
               const SizedBox(height: 20),
               Text(
                 "Ingredientes:",
                 style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 10),
-              ...ingredients.map((ingredient) => Text(
-                    "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
-                    style: TextStyle(fontSize: 18),
-                  )),
+              ...ingredients.map((ingredient) {
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
+                      style: TextStyle(fontSize: 18),
+                    ),
+                    if (ingredient['principal'] == true)
+                      Icon(Icons.star,
+                          color: Colors
+                              .amber), // Ícono de estrella para ingredientes principales
+                  ],
+                );
+              }).toList(),
+
               const SizedBox(height: 20),
               Text(
                 "Preparación:",

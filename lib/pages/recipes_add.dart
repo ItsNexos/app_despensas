@@ -11,11 +11,14 @@ class RecipeAddPage extends StatefulWidget {
 }
 
 class _RecipeAddPageState extends State<RecipeAddPage> {
+  bool _isMainIngredient = false;
+
   bool _publishForOthers = false;
   final _formKey = GlobalKey<FormState>();
   TextEditingController _titleController = TextEditingController();
   TextEditingController _preparationController = TextEditingController();
   TextEditingController _estimatedTimeController = TextEditingController();
+  TextEditingController _servingsController = TextEditingController();
 
   List<Map<String, dynamic>> ingredients = [];
   TextEditingController _ingredientNameController = TextEditingController();
@@ -69,21 +72,23 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
     if (_ingredientNameController.text.isNotEmpty &&
         _ingredientQuantityController.text.isNotEmpty) {
       setState(() {
-        // Si el ingrediente no está en las sugerencias, lo agregamos como nuevo
         String ingredientName = _ingredientNameController.text;
         if (!userProducts.contains(ingredientName)) {
-          userProducts.add(
-              ingredientName); // Lo añadimos a la lista de productos del usuario
+          userProducts.add(ingredientName);
         }
 
         ingredients.add({
           'nombre': ingredientName,
           'cantidad': int.parse(_ingredientQuantityController.text),
           'medida': _ingredientUnit,
+          'principal': _isMainIngredient, // Añadir atributo principal
         });
+
+        // Limpiar campos después de añadir
         _ingredientNameController.clear();
         _ingredientQuantityController.clear();
         _ingredientUnit = 'unidades';
+        _isMainIngredient = false; // Resetear el checkbox
       });
     }
   }
@@ -96,6 +101,8 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
         'preparacion': _preparationController.text,
         'categorias': selectedCategories,
         'tiempoEstimado': int.tryParse(_estimatedTimeController.text) ?? 0,
+        'porciones':
+            int.tryParse(_servingsController.text) ?? 1, // Agregar porciones
       };
 
       final recipeRef = await FirebaseFirestore.instance
@@ -138,7 +145,8 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
   void dispose() {
     _titleController.dispose();
     _preparationController.dispose();
-    _ingredientQuantityController.dispose();
+    _estimatedTimeController.dispose();
+    _servingsController.dispose();
     super.dispose();
   }
 
@@ -194,6 +202,22 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                   return null;
                 },
               ),
+              const SizedBox(height: 20),
+              TextFormField(
+                controller: _servingsController,
+                decoration: const InputDecoration(labelText: "Porciones"),
+                keyboardType: TextInputType.number,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return "Por favor ingresa el número de porciones";
+                  }
+                  if (int.tryParse(value) == null) {
+                    return "Por favor ingresa un número válido";
+                  }
+                  return null;
+                },
+              ),
+
               const SizedBox(height: 20),
               Text("Ingredientes:",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -278,6 +302,17 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+              CheckboxListTile(
+                title: Text("Ingrediente principal"),
+                value: _isMainIngredient,
+                onChanged: (bool? value) {
+                  setState(() {
+                    _isMainIngredient = value ?? false;
+                  });
+                },
+              ),
+
               ElevatedButton(
                 onPressed: _addIngredient,
                 child: const Text("Agregar ingrediente"),
