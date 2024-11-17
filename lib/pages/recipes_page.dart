@@ -14,6 +14,9 @@ class RecipesPage extends StatefulWidget {
 
 class _RecipesPageState extends State<RecipesPage>
     with SingleTickerProviderStateMixin {
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+
   final User? user = FirebaseAuth.instance.currentUser;
 
   @override
@@ -21,7 +24,13 @@ class _RecipesPageState extends State<RecipesPage>
     super.initState();
   }
 
-  Future<List<Map<String, dynamic>>> _getRecipesWithMatches() async {
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Stream<List<Map<String, dynamic>>> _getRecipesWithMatches() async* {
     final recipesRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(user!.uid)
@@ -47,13 +56,25 @@ class _RecipesPageState extends State<RecipesPage>
         final recipeData = recipeDoc.data();
         final ingredientesSnapshot =
             await recipeDoc.reference.collection('ingredientes').get();
-        final ingredientes = ingredientesSnapshot.docs
+
+        // Obtener todos los ingredientes y los ingredientes principales por separado
+        final allIngredients = ingredientesSnapshot.docs
+            .map((doc) => doc['nombre'] as String)
+            .toList();
+        final mainIngredients = ingredientesSnapshot.docs
+            .where((doc) => doc['principal'] == true)
             .map((doc) => doc['nombre'] as String)
             .toList();
 
-        final matchCount = ingredientes
+        // Solo los ingredientes principales se muestran como "poseídos" o "faltantes"
+        final ownedMainIngredients = mainIngredients
             .where((ingredient) => userProducts.contains(ingredient))
-            .length;
+            .toList();
+        final missingMainIngredients = mainIngredients
+            .where((ingredient) => !userProducts.contains(ingredient))
+            .toList();
+
+        final matchCount = allIngredients.length;
 
         return {
           'id': recipeDoc.id,
@@ -61,13 +82,33 @@ class _RecipesPageState extends State<RecipesPage>
           'tiempoEstimado': recipeData['tiempoEstimado'],
           'preparacion': recipeData['preparacion'],
           'matchCount': matchCount,
+          'porciones': recipeData['porciones'] ?? 1,
+          'ownedMainIngredients':
+              ownedMainIngredients.isNotEmpty ? ownedMainIngredients : [],
+          'missingMainIngredients':
+              missingMainIngredients.isNotEmpty ? missingMainIngredients : [],
+          'ingredientes':
+              allIngredients, // Usar todos los ingredientes para la búsqueda
         };
       }).toList(),
     );
 
+    // Aplicar filtro de búsqueda en todos los ingredientes
+    if (_searchQuery.isNotEmpty) {
+      recipesWithMatches = recipesWithMatches.where((recipe) {
+        final title = recipe['titulo'].toLowerCase();
+        final ingredients = recipe['ingredientes']
+            .map((ing) => ing.toString().toLowerCase())
+            .toList();
+        return title.contains(_searchQuery.toLowerCase()) ||
+            ingredients.any(
+                (ing) => (ing as String).contains(_searchQuery.toLowerCase()));
+      }).toList();
+    }
+
     recipesWithMatches
         .sort((a, b) => b['matchCount'].compareTo(a['matchCount']));
-    return recipesWithMatches;
+    yield recipesWithMatches;
   }
 
   void _showDeleteConfirmationDialog(String recipeId) {
@@ -136,8 +177,8 @@ class _RecipesPageState extends State<RecipesPage>
   }
 
   Widget _buildRecipeList() {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getRecipesWithMatches(),
+    return StreamBuilder<List<Map<String, dynamic>>>(
+      stream: _getRecipesWithMatches(),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -148,6 +189,12 @@ class _RecipesPageState extends State<RecipesPage>
           itemCount: recipes.length,
           itemBuilder: (context, index) {
             final recipe = recipes[index];
+
+            // Usamos solo los ingredientes principales para mostrar en la interfaz
+            final ownedMainIngredients = recipe['ownedMainIngredients'] ?? [];
+            final missingMainIngredients =
+                recipe['missingMainIngredients'] ?? [];
+
             return Card(
               elevation: 4,
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -156,7 +203,7 @@ class _RecipesPageState extends State<RecipesPage>
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
                 title: Text(
-                  recipe['titulo'],
+                  recipe['titulo'] ?? 'Sin título',
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -167,14 +214,31 @@ class _RecipesPageState extends State<RecipesPage>
                   children: [
                     const SizedBox(height: 8),
                     Text(
-                      "Tiempo estimado: ${recipe['tiempoEstimado']} min",
+                      "Tiempo estimado: ${recipe['tiempoEstimado'] ?? 'N/A'} min",
                       style: const TextStyle(fontSize: 16),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Ingredientes: ${recipe['matchCount']} coincidencias",
+                      "Porciones: ${recipe['porciones'] ?? 'N/A'}",
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      "Ingredientes: ${recipe['matchCount'] ?? 0} coincidencias",
                       style: const TextStyle(fontSize: 16, color: Colors.grey),
                     ),
+                    const SizedBox(height: 4),
+                    if (ownedMainIngredients.isNotEmpty)
+                      Text(
+                        "Tienes estos productos: ${ownedMainIngredients.join(', ')}",
+                        style:
+                            const TextStyle(fontSize: 16, color: Colors.green),
+                      ),
+                    if (missingMainIngredients.isNotEmpty)
+                      Text(
+                        "Te faltan estos productos: ${missingMainIngredients.join(', ')}",
+                        style: const TextStyle(fontSize: 16, color: Colors.red),
+                      ),
                   ],
                 ),
                 trailing: Row(
@@ -212,20 +276,46 @@ class _RecipesPageState extends State<RecipesPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Recetas'),
+        title: const Text('Mis Recetas'), // Mantén el AppBar vacío
         backgroundColor: const Color(0xFFB0C4DE),
+        elevation: 0, // Elimina la sombra para que coincida con el diseño
       ),
       body: Column(
         children: [
+          // Barra de búsqueda con estilo similar a PantryPage
+          Padding(
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFF5D83B1), // Color de fondo del buscador
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  hintText: 'Receta o ingrediente',
+                  hintStyle: TextStyle(color: Colors.white),
+                  prefixIcon: Icon(Icons.search, color: Colors.white),
+                  border: InputBorder.none,
+                  contentPadding:
+                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                ),
+                style: const TextStyle(color: Colors.white),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Mis Recetas',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
                 ElevatedButton(
                   onPressed: () {
                     Navigator.push(
