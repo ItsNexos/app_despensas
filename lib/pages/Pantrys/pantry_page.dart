@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:app_despensas/pages/pantry_view.dart';
-import 'package:intl/intl.dart';
+import 'package:app_despensas/pages/Pantrys/pantry_view.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import 'shopping_page.dart';
-import 'recipes_page.dart';
-import 'home_page.dart';
 
 class PantryPage extends StatefulWidget {
   final String userId;

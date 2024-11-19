@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'pantry_page.dart';
+import '../Pantrys/pantry_page.dart';
 import 'shopping_page.dart';
-import 'recipes_page.dart';
+import '../Recipes/TabBar/recipes_page.dart';
 import 'user_page.dart';
-import 'user_auth/login_page.dart';
+import '../user_auth/login_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

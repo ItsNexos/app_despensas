@@ -1,5 +1,5 @@
-import 'package:app_despensas/pages/product_card.dart';
-import 'package:app_despensas/pages/voice_page.dart';
+import 'package:app_despensas/pages/Pantrys/Products/product_card.dart';
+import 'package:app_despensas/pages/Pantrys/Products/voice_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
@@ -60,6 +60,8 @@ class _PantryViewState extends State<PantryView> {
     for (var doc in querySnapshot.docs) {
       final nombre = doc['nombre'];
       final stockMinimo = doc['stockMinimo'];
+      final duracion = doc['duracion'];
+      final tipoDuracion = doc['tipoDuracion'];
 
       QuerySnapshot unidadesSnapshot = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -84,6 +86,8 @@ class _PantryViewState extends State<PantryView> {
         'nombre': nombre,
         'stockMinimo': stockMinimo,
         'unidades': unidades,
+        'duracion': duracion,
+        'tipoDuracion': tipoDuracion
       });
     }
 
@@ -110,8 +114,10 @@ class _PantryViewState extends State<PantryView> {
     final _nombreController = TextEditingController();
     final _cantidadController = TextEditingController();
     final _stockMinimoController = TextEditingController();
-    String _fechaCaducidad =
-        ''; // Inicializar como string vacío en lugar de DateTime?
+    String _medidaSeleccionada = 'Unidades'; // Default selection
+    final _duracionController = TextEditingController();
+    String _tipoDuracionSeleccionada = 'Días';
+
     final _formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -156,6 +162,30 @@ class _PantryViewState extends State<PantryView> {
                       return null;
                     },
                   ),
+                  DropdownButtonFormField<String>(
+                    value: _medidaSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Unidad de medida',
+                    ),
+                    items: [
+                      'Unidades',
+                      'Gramos',
+                      'Kilogramos',
+                      'Litros',
+                      'Mililitros'
+                    ].map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _medidaSeleccionada = newValue!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 10),
                   TextFormField(
                     controller: _stockMinimoController,
                     keyboardType: TextInputType.number,
@@ -173,42 +203,40 @@ class _PantryViewState extends State<PantryView> {
                     },
                   ),
                   const SizedBox(height: 10),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text('Fecha de vencimiento: '),
-                      TextButton(
-                        onPressed: () async {
-                          DateTime? pickedDate = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(2020),
-                            lastDate: DateTime(2100),
-                          );
-                          if (pickedDate != null) {
-                            setState(() {
-                              _fechaCaducidad =
-                                  DateFormat('dd/MM/yyyy').format(pickedDate);
-                            });
-                          }
-                        },
-                        child: Text(
-                          _fechaCaducidad.isEmpty
-                              ? 'Opcional'
-                              : _fechaCaducidad,
-                        ),
-                      ),
-                      if (_fechaCaducidad.isNotEmpty)
-                        IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            setState(() {
-                              _fechaCaducidad =
-                                  ''; // Reinicia a un string vacío
-                            });
-                          },
-                        ),
-                    ],
+                  TextFormField(
+                    controller: _duracionController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Duración',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese una duración';
+                      }
+                      final duracion = int.tryParse(value);
+                      if (duracion == null || duracion <= 0) {
+                        return 'La duración debe ser mayor a 0';
+                      }
+                      return null;
+                    },
+                  ),
+                  DropdownButtonFormField<String>(
+                    value: _tipoDuracionSeleccionada,
+                    decoration: const InputDecoration(
+                      labelText: 'Tipo de duración',
+                    ),
+                    items: ['Días', 'Semanas', 'Meses', 'Años']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(value),
+                      );
+                    }).toList(),
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        _tipoDuracionSeleccionada = newValue!;
+                      });
+                    },
                   ),
                 ],
               ),
@@ -230,12 +258,15 @@ class _PantryViewState extends State<PantryView> {
                   final fechaIngreso =
                       DateFormat('dd/MM/yyyy').format(DateTime.now());
 
+                  int duracionOWO = int.parse(_duracionController.text);
                   _guardarProducto(
                     nombre,
                     cantidad,
                     stockMinimo,
                     fechaIngreso,
-                    _fechaCaducidad, // Enviar string vacío si no se elige fecha
+                    _medidaSeleccionada,
+                    _tipoDuracionSeleccionada,
+                    duracionOWO,
                   );
                   Navigator.of(context).pop();
                 }
@@ -249,8 +280,14 @@ class _PantryViewState extends State<PantryView> {
   }
 
 // Modificación del método _guardarProducto para aceptar fecha de vencimiento opcional
-  void _guardarProducto(String nombre, int cantidad, int stockMinimo,
-      String fechaIngreso, String fechaVencimiento) async {
+  void _guardarProducto(
+      String nombre,
+      int cantidad,
+      int stockMinimo,
+      String fechaIngreso,
+      String medida,
+      String tipoDuracion,
+      int duracion) async {
     final productoRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
@@ -263,6 +300,9 @@ class _PantryViewState extends State<PantryView> {
     await productoRef.set({
       'nombre': nombre,
       'stockMinimo': stockMinimo,
+      'medida': medida,
+      'duracion': duracion,
+      'tipoDuracion': tipoDuracion,
     });
 
     // Guardar cada unidad del producto
@@ -271,7 +311,8 @@ class _PantryViewState extends State<PantryView> {
         'fechaIngreso': fechaIngreso,
       };
 
-      unidadData['fechaVencimiento'] = fechaVencimiento;
+      unidadData['fechaVencimiento'] =
+          _calcularFechaVencimiento(fechaIngreso, duracion, tipoDuracion);
 
       await productoRef.collection('unidades_productos').add(unidadData);
     }
@@ -334,6 +375,155 @@ class _PantryViewState extends State<PantryView> {
         );
       },
     );
+  }
+
+  void _agregarUnidadesProducto(
+      BuildContext context, Map<String, dynamic> producto) {
+    print('Producto recibido: $producto');
+    final int duracion = producto['duracion'] ?? 0;
+    final String tipoDuracion = producto['tipoDuracion'] ?? 'Días';
+    final _cantidadController = TextEditingController();
+
+    bool usarDuracion = true; // Por defecto, usar la duración del producto
+    String fechaIngreso = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    String fechaVencimiento = '';
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Agregar unidades'),
+          content: StatefulBuilder(
+            builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: _cantidadController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(
+                      labelText: 'Cantidad',
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese una cantidad';
+                      }
+                      final cantidad = int.tryParse(value);
+                      if (cantidad == null || cantidad <= 0) {
+                        return 'Ingrese un número válido mayor a 0';
+                      }
+                      return null;
+                    },
+                  ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: usarDuracion,
+                        onChanged: (value) {
+                          setState(() {
+                            usarDuracion = value!;
+                          });
+                        },
+                      ),
+                      const Text('Usar duración del producto'),
+                    ],
+                  ),
+                  if (!usarDuracion)
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Fecha de vencimiento: '),
+                        TextButton(
+                          onPressed: () async {
+                            DateTime? pickedDate = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime(2020),
+                              lastDate: DateTime(2100),
+                            );
+                            if (pickedDate != null) {
+                              setState(() {
+                                fechaVencimiento =
+                                    DateFormat('dd/MM/yyyy').format(pickedDate);
+                              });
+                            }
+                          },
+                          child: Text(
+                            fechaVencimiento.isEmpty
+                                ? 'Seleccionar'
+                                : fechaVencimiento,
+                          ),
+                        ),
+                      ],
+                    ),
+                ],
+              );
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancelar'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (_cantidadController.text.isNotEmpty) {
+                  final cantidad = int.parse(_cantidadController.text);
+
+                  // Calcular fecha de vencimiento si "usarDuracion" está activo
+                  if (usarDuracion) {
+                    fechaVencimiento = _calcularFechaVencimiento(
+                        fechaIngreso, duracion, tipoDuracion);
+                  }
+
+                  // Agregar unidades a Firestore
+                  final productoRef = FirebaseFirestore.instance
+                      .collection('usuarios')
+                      .doc(widget.userId)
+                      .collection('despensas')
+                      .doc(widget.despensaId)
+                      .collection('productos')
+                      .doc(producto['id']);
+
+                  for (int i = 0; i < cantidad; i++) {
+                    await productoRef.collection('unidades_productos').add({
+                      'fechaIngreso': fechaIngreso,
+                      'fechaVencimiento': fechaVencimiento,
+                    });
+                  }
+
+                  Navigator.of(context).pop(); // Cerrar el modal
+                  _loadProductos(); // Recargar productos
+                }
+              },
+              child: const Text('Agregar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  String _calcularFechaVencimiento(
+      String fechaIngreso, int duracion, String tipoDuracion) {
+    DateTime fecha = DateFormat('dd/MM/yyyy').parse(fechaIngreso);
+
+    switch (tipoDuracion) {
+      case 'Días':
+        fecha = fecha.add(Duration(days: duracion));
+        break;
+      case 'Semanas':
+        fecha = fecha.add(Duration(days: duracion * 7));
+        break;
+      case 'Meses':
+        fecha = DateTime(fecha.year, fecha.month + duracion, fecha.day);
+        break;
+      case 'Años':
+        fecha = DateTime(fecha.year + duracion, fecha.month, fecha.day);
+        break;
+    }
+
+    return DateFormat('dd/MM/yyyy').format(fecha);
   }
 
   // Editar la fecha de vencimiento de una unidad específica
@@ -452,6 +642,7 @@ class _PantryViewState extends State<PantryView> {
                   },
                   onEditProduct: _editarProducto,
                   onEditExpiration: _editarFechaVencimiento,
+                  onAddUnits: _agregarUnidadesProducto, // Pasar la función aquí
                   onUnitDeleted:
                       _loadProductos, // Recargar después de eliminar una unidad
                   userId: widget.userId,
