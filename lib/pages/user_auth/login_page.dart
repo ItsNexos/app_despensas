@@ -1,4 +1,4 @@
-import 'package:app_despensas/pages/home_page.dart';
+import 'package:app_despensas/pages/App/home_page.dart';
 import 'package:app_despensas/pages/user_auth/sign_up_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -66,7 +66,7 @@ class _LoginPageState extends State<LoginPage> {
 
   // Modal para mostrar error de credenciales
   void _showErrorDialog() {
-    if(!mounted) return; 
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

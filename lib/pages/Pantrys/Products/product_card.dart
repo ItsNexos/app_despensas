@@ -8,6 +8,7 @@ class ProductCard extends StatefulWidget {
   final Function(BuildContext, Map<String, dynamic>) onEditProduct;
   final Function(BuildContext, String, Map<String, dynamic>) onEditExpiration;
   final Function() onUnitDeleted;
+  final Function(BuildContext, Map<String, dynamic>) onAddUnits;
   final String userId;
   final String despensaId;
 
@@ -20,6 +21,7 @@ class ProductCard extends StatefulWidget {
     required this.onUnitDeleted,
     required this.userId,
     required this.despensaId,
+    required this.onAddUnits,
   }) : super(key: key);
 
   @override
@@ -160,6 +162,11 @@ class _ProductCardState extends State<ProductCard> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.add, color: Color(0xFF5D83B1)),
+                  onPressed: () => widget.onAddUnits(
+                      context, widget.product), // Llama a la función pasada
+                ),
                 IconButton(
                   icon: Icon(
                     isExpanded ? Icons.expand_less : Icons.expand_more,
