@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:app_despensas/pages/App/home_page.dart';
 import 'package:app_despensas/pages/user_auth/login_page.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget? child;
@@ -33,10 +36,23 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Redirigir después de la animación
+    // Verificación de internet y redirección después de la animación
     Future.delayed(const Duration(seconds: 4), () {
-      _checkAuthentication();
+      _checkInternetConnection();
     });
+  }
+
+  // Verifica conexión a internet
+  Future<void> _checkInternetConnection() async {
+    final connectivityResult = await Connectivity().checkConnectivity();
+
+    if (connectivityResult == ConnectivityResult.none) {
+      // Si no hay conexión, mostrar mensaje y cerrar la app
+      _showNoInternetDialog();
+    } else {
+      // Si hay conexión, verificar autenticación
+      _checkAuthentication();
+    }
   }
 
   // Verifica si el usuario está autenticado
@@ -54,6 +70,26 @@ class _SplashScreenState extends State<SplashScreen>
     }
   }
 
+  // Muestra un diálogo de error y cierra la app
+  void _showNoInternetDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text("Sin conexión a internet"),
+        content: const Text(
+            "Esta aplicación requiere conexión a internet para funcionar. Por favor, verifica tu conexión e inténtalo de nuevo."),
+        actions: [
+          TextButton(
+            onPressed: () {
+              exit(0); // Cierra la aplicación
+            },
+            child: const Text("Cerrar"),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _controller.dispose();
@@ -63,30 +99,29 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFE5E5E5),
+      backgroundColor: const Color(0xFF124580), // Fondo azul
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.shopping_cart,
-                size: 100,
-                color: Colors.blueAccent,
+              SvgPicture.asset(
+                'assets/icon.svg', // Ruta al archivo SVG
+                width: 250,
+                height: 250,
               ),
-              const SizedBox(height: 20),
               const Text(
-                "¡Bienvenido a la app de despensas!",
+                "DespensApp",
                 style: TextStyle(
-                  fontSize: 22,
-                  color: Colors.blueAccent,
+                  fontSize: 24,
+                  color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 10),
-              CircularProgressIndicator(
-                color: Colors.blueAccent,
+              const SizedBox(height: 25),
+              const CircularProgressIndicator(
+                color: Colors.white,
               ),
             ],
           ),

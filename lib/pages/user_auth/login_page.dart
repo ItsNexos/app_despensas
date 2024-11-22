@@ -1,4 +1,5 @@
 import 'package:app_despensas/pages/App/home_page.dart';
+import 'package:app_despensas/pages/user_auth/forgot_password.dart';
 import 'package:app_despensas/pages/user_auth/sign_up_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -251,7 +252,11 @@ class _LoginPageState extends State<LoginPage> {
                       alignment: Alignment.centerRight,
                       child: TextButton(
                         onPressed: () {
-                          // Implementar lógica de recuperación
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (context) => ForgotPassword()),
+                          );
                         },
                         child: Text(
                           "¿Olvidaste tu contraseña?",
