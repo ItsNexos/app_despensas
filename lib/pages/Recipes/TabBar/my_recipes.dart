@@ -85,14 +85,15 @@ class _MyRecipesState extends State<MyRecipes> {
         };
       }).toList(),
     );
-
-    setState(() {
-      sugeridas = todasRecetas
-          .where((recipe) => recipe['missingMainIngredients'].isEmpty)
-          .toList();
-      todas = todasRecetas;
-      isLoading = false;
-    });
+    if (mounted) {
+      setState(() {
+        sugeridas = todasRecetas
+            .where((recipe) => recipe['missingMainIngredients'].isEmpty)
+            .toList();
+        todas = todasRecetas;
+        isLoading = false;
+      });
+    }
   }
 
   void _showDeleteConfirmationDialog(String recipeId) {
@@ -123,16 +124,23 @@ class _MyRecipesState extends State<MyRecipes> {
                     .doc(recipeId)
                     .delete();
 
+                await FirebaseFirestore.instance
+                    .collection('recetas')
+                    .doc(recipeId)
+                    .delete();
+
                 Navigator.of(context).pop(); // Cierra el diálogo
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Receta eliminada exitosamente'),
                   ),
                 );
-                setState(() {
-                  // Recarga la lista de recetas
-                  _loadRecetas();
-                });
+                if (mounted) {
+                  setState(() {
+                    // Recarga la lista de recetas
+                    _loadRecetas();
+                  });
+                }
               },
               child: const Text("Eliminar"),
             ),

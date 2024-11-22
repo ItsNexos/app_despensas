@@ -49,6 +49,8 @@ dependencies:
   email_validator: ^3.0.0
   connectivity_plus: ^6.1.0
   flutter_svg: ^2.0.15
+  diacritic: ^0.1.6
+  string_similarity: ^2.1.1
 
 dev_dependencies:
   flutter_test:

@@ -402,14 +402,6 @@ class _PantryPageState extends State<PantryPage> {
                           },
                         ),
                         const SizedBox(height: 10),
-                        TextField(
-                          decoration:
-                              const InputDecoration(hintText: 'Descripcion'),
-                          onChanged: (value) {
-                            category = value;
-                          },
-                        ),
-                        const SizedBox(height: 10),
                         DropdownButton<IconData>(
                           value: tempSelectedIcon,
                           isExpanded: true,
@@ -471,7 +463,6 @@ class _PantryPageState extends State<PantryPage> {
                         .collection('despensas')
                         .add({
                       'nombre': name,
-                      'descripcion': category,
                       'icono': selectedIcon.codePoint,
                     }).then((_) {
                       _loadPantries(widget.userId);
