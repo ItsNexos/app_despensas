@@ -24,6 +24,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
   TextEditingController _ingredientNameController = TextEditingController();
   TextEditingController _ingredientQuantityController = TextEditingController();
   String _ingredientUnit = 'unidades';
+  String _userName = '';
 
   List<String> userProducts = []; // Lista de productos del usuario
   List<String> filteredSuggestions = [];
@@ -32,6 +33,18 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
   void initState() {
     super.initState();
     _loadUserProducts();
+    _fetchUserName();
+  }
+
+  Future<void> _fetchUserName() async {
+    final userDoc = await FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.user)
+        .get();
+
+    setState(() {
+      _userName = userDoc.data()?['nombre'] ?? 'Usuario Desconocido';
+    });
   }
 
   // Método para cargar productos de la despensa del usuario
@@ -103,6 +116,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
         'tiempoEstimado': int.tryParse(_estimatedTimeController.text) ?? 0,
         'porciones':
             int.tryParse(_servingsController.text) ?? 1, // Agregar porciones
+        'autor': _userName, // Agregar el nombre del autor
       };
 
       final recipeRef = await FirebaseFirestore.instance
@@ -228,10 +242,25 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                 itemBuilder: (context, index) {
                   final ingredient = ingredients[index];
                   return ListTile(
-                    title: Text(
-                        "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}"),
+                    title: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                        ),
+                        if (ingredient['principal'] ==
+                            true) // Verifica si es principal
+                          const Icon(
+                            Icons.star,
+                            color: Colors.amber,
+                            size: 20, // Tamaño de la estrellita
+                          ),
+                      ],
+                    ),
                     trailing: IconButton(
-                      icon: Icon(Icons.delete),
+                      icon: const Icon(Icons.delete),
                       onPressed: () {
                         setState(() {
                           ingredients.removeAt(index);

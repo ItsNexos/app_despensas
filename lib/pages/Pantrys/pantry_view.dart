@@ -132,6 +132,7 @@ class _PantryViewState extends State<PantryView> {
                 children: [
                   TextFormField(
                     controller: _nombreController,
+                    textCapitalization: TextCapitalization.sentences,
                     decoration: const InputDecoration(
                       labelText: 'Nombre del Producto',
                     ),
@@ -325,6 +326,11 @@ class _PantryViewState extends State<PantryView> {
     final _nombreController = TextEditingController(text: producto['nombre']);
     final _stockMinimoController =
         TextEditingController(text: producto['stockMinimo'].toString());
+    final _duracionController =
+        TextEditingController(text: producto['duracion'].toString());
+    final _tipoDuracionController =
+        TextEditingController(text: producto['tipoDuracion']);
+    final _medidaController = TextEditingController(text: producto['medida']);
 
     showDialog(
       context: context,
@@ -342,6 +348,19 @@ class _PantryViewState extends State<PantryView> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(labelText: 'Stock Mínimo'),
               ),
+              TextField(
+                controller: _duracionController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Duración'),
+              ),
+              TextField(
+                controller: _tipoDuracionController,
+                decoration: const InputDecoration(labelText: 'Tipo Duración'),
+              ),
+              TextField(
+                controller: _medidaController,
+                decoration: const InputDecoration(labelText: 'Medida'),
+              ),
             ],
           ),
           actions: [
@@ -353,6 +372,9 @@ class _PantryViewState extends State<PantryView> {
               onPressed: () async {
                 final nuevoNombre = _nombreController.text;
                 final nuevoStockMinimo = int.parse(_stockMinimoController.text);
+                final nuevaDuracion = int.parse(_duracionController.text);
+                final nuevoTipoDuracion = _tipoDuracionController.text;
+                final nuevaMedida = _medidaController.text;
 
                 await FirebaseFirestore.instance
                     .collection('usuarios')
@@ -362,8 +384,11 @@ class _PantryViewState extends State<PantryView> {
                     .collection('productos')
                     .doc(producto['id'])
                     .update({
+                  'duracion': nuevaDuracion,
+                  'medida': nuevaMedida,
                   'nombre': nuevoNombre,
                   'stockMinimo': nuevoStockMinimo,
+                  'tipoDuracion': nuevoTipoDuracion,
                 });
 
                 Navigator.of(context).pop();

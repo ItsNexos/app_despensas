@@ -18,7 +18,7 @@ class _VoicePageState extends State<VoicePage> {
   final SpeechToText _speechToText = SpeechToText();
   bool _speechEnabled = false;
   String _wordsSpoken = "";
-  double _confidenceLevel = 0;
+
   List<Map<String, dynamic>> _products = [];
 
   @override
@@ -37,9 +37,7 @@ class _VoicePageState extends State<VoicePage> {
       onResult: _onSpeechResult,
       localeId: 'es_ES', // Cambia esto si quieres otro dialecto
     );
-    setState(() {
-      _confidenceLevel = 0;
-    });
+    setState(() {});
   }
 
   void _stopListening() async {
@@ -50,9 +48,20 @@ class _VoicePageState extends State<VoicePage> {
   void _onSpeechResult(result) {
     setState(() {
       _wordsSpoken = result.recognizedWords;
-      _confidenceLevel = result.confidence;
     });
     _filterSpokenWords(_wordsSpoken);
+  }
+
+  String capitalize(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1);
+  }
+
+  String formatProductName(String productName) {
+    return productName
+        .split(' ') // Divide el nombre en palabras
+        .map((word) => capitalize(word)) // Capitaliza cada palabra
+        .join(' '); // Une las palabras de nuevo con espacios
   }
 
   void _filterSpokenWords(String words) {
@@ -69,7 +78,8 @@ class _VoicePageState extends State<VoicePage> {
         if (currentProduct.isNotEmpty) {
           filteredProducts.add({
             'quantity': currentQuantity,
-            'product': currentProduct.trim(),
+            'product':
+                capitalize(currentProduct.trim()), // Capitalizar primera letra
             'date': DateTime.now().toString(),
             'expiryDate': ""
           });
@@ -84,7 +94,8 @@ class _VoicePageState extends State<VoicePage> {
     if (currentProduct.isNotEmpty && currentQuantity != null) {
       filteredProducts.add({
         'quantity': currentQuantity,
-        'product': currentProduct.trim(),
+        'product':
+            capitalize(currentProduct.trim()), // Capitalizar primera letra
         'date': DateTime.now().toString(),
         'expiryDate': ""
       });
@@ -99,7 +110,7 @@ class _VoicePageState extends State<VoicePage> {
     try {
       return int.parse(word);
     } catch (e) {
-      return palabrasANumeroExtendido(word);
+      return palabrasANumeroExtendido(word); // Soporte para números en texto
     }
   }
 
@@ -107,6 +118,8 @@ class _VoicePageState extends State<VoicePage> {
     Map<String, int> unidades = {
       'cero': 0,
       'un': 1,
+      'Un': 1,
+      'Una': 1,
       'una': 1,
       'dos': 2,
       'tres': 3,
@@ -162,6 +175,9 @@ class _VoicePageState extends State<VoicePage> {
         await productoDocRef.set({
           'nombre': nombre,
           'stockMinimo': stockMinimo,
+          'duracion': '',
+          'tipoDuracion': '',
+          'medida': 'Unidades'
         });
 
         // Añadimos la cantidad como unidades individuales en 'unidades_productos'
@@ -228,7 +244,7 @@ class _VoicePageState extends State<VoicePage> {
             TextButton(
               onPressed: () {
                 setState(() {
-                  _products[index]['product'] = nombre;
+                  _products[index]['product'] = formatProductName(nombre);
                   _products[index]['quantity'] = cantidad;
                 });
                 Navigator.pop(context);
