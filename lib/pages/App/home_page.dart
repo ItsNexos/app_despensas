@@ -6,6 +6,8 @@ import 'shopping_page.dart';
 import '../Recipes/TabBar/recipes_page.dart';
 import 'user_page.dart';
 import '../user_auth/login_page.dart';
+import '../Pantrys/Products/voice_page.dart';
+import '../Pantrys/pantry_view.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,13 +18,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   User? _user;
-  String? selectedPantry;
-  List<String> pantryList = [];
+  String? selectedPantryId;
+  List<Map<String, dynamic>> pantryList = [];
 
   @override
   void initState() {
     super.initState();
     _checkUserStatus();
+  }
+
+  Future<String> getSelectedPantryName() async {
+    if (selectedPantryId == null || _user == null) return '';
+
+    try {
+      DocumentSnapshot pantrySnapshot = await FirebaseFirestore.instance
+          .collection('usuarios')
+          .doc(_user!.uid)
+          .collection('despensas')
+          .doc(selectedPantryId)
+          .get();
+
+      if (pantrySnapshot.exists) {
+        return pantrySnapshot.get('nombre') as String;
+      } else {
+        return '';
+      }
+    } catch (e) {
+      print('Error al obtener el nombre de la despensa: $e');
+      return '';
+    }
   }
 
   void _checkUserStatus() {
@@ -37,14 +61,41 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  Stream<List<String>> _getPantryStream() {
+  Stream<List<Map<String, dynamic>>> _getPantryStream() {
     return FirebaseFirestore.instance
         .collection('usuarios')
         .doc(_user!.uid)
         .collection('despensas')
         .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => doc['nombre'] as String).toList());
+        .map((snapshot) => snapshot.docs
+            .map((doc) => {'id': doc.id, 'nombre': doc['nombre'] as String})
+            .toList());
+  }
+
+// Método ajustado para evitar conflictos con la fase de construcción
+  void validateSelectionSafe(List<Map<String, dynamic>> pantries) {
+    if (pantries.isEmpty) {
+      // Si no hay despensas, resetear la selección
+      if (selectedPantryId != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          setState(() {
+            selectedPantryId = null;
+          });
+        });
+      }
+      return;
+    }
+
+    // Verificar si el ID seleccionado existe en la lista actual
+    bool idExists = pantries.any((p) => p['id'] == selectedPantryId);
+
+    if (!idExists) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        setState(() {
+          selectedPantryId = pantries[0]['id'];
+        });
+      });
+    }
   }
 
   @override
@@ -58,6 +109,17 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       backgroundColor: const Color(0xFF124580),
       drawer: _buildDrawer(username),
+      //AppBar
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF124580),
+        elevation: 0,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu, color: Colors.white),
+            onPressed: () => Scaffold.of(context).openDrawer(),
+          ),
+        ),
+      ),
       body: Stack(
         children: [
           // Sección superior azul
@@ -66,7 +128,7 @@ class _HomePageState extends State<HomePage> {
             left: 0,
             right: 0,
             height:
-                MediaQuery.of(context).size.height * 0.20, //altura del texto
+                MediaQuery.of(context).size.height * 0.10, //altura del texto
             child: Container(
               color: const Color(0xFF124580),
               padding:
@@ -103,7 +165,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: 10),
                   const Text(
                     "¿Qué quieres hacer hoy?",
                     style: TextStyle(
@@ -121,7 +183,7 @@ class _HomePageState extends State<HomePage> {
           // Contenedor blanco redondeado
           Positioned(
             top:
-                MediaQuery.of(context).size.height * 0.15, //posicion del blanco
+                MediaQuery.of(context).size.height * 0.12, //posicion del blanco
             child: Container(
               width: MediaQuery.of(context).size.width,
               height: MediaQuery.of(context).size.height,
@@ -137,7 +199,7 @@ class _HomePageState extends State<HomePage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 20),
 
                     // Botón de Compras
                     _buildMainButton(
@@ -153,7 +215,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 20),
 
                     // Botón de Cocinar
                     _buildMainButton(
@@ -182,128 +244,128 @@ class _HomePageState extends State<HomePage> {
 
                     const SizedBox(height: 8),
 
+                    // Dropdown de despensas
                     Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(15),
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: StreamBuilder<List<String>>(
-                        stream: _getPantryStream(),
-                        builder: (context, snapshot) {
-                          if (!snapshot.hasData) {
-                            return const Padding(
-                              padding: EdgeInsets.all(16.0),
-                              child:
-                                  CircularProgressIndicator(), // Mientras carga
-                            );
-                          }
-                          pantryList = snapshot.data!;
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: StreamBuilder<List<Map<String, dynamic>>>(
+                          stream: _getPantryStream(),
+                          builder: (context, snapshot) {
+                            if (!snapshot.hasData) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: CircularProgressIndicator(),
+                              );
+                            }
 
-                          // Depuración: Imprime la lista de despensas y el valor de selectedPantry
-                          print("Lista de despensas: $pantryList");
-                          print(
-                              "Valor de selectedPantry antes de verificar: $selectedPantry");
+                            pantryList = snapshot.data!;
+                            validateSelectionSafe(
+                                pantryList); // Actualizamos selección de forma segura
 
-                          // Asegúrate de que selectedPantry tenga un valor válido
-                          if (pantryList.isNotEmpty && selectedPantry == null) {
-                            selectedPantry = pantryList[
-                                0]; // Si no hay ninguno seleccionado, selecciona el primer elemento
-                          }
+                            if (pantryList.isEmpty) {
+                              return const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text('No hay despensas disponibles'),
+                              );
+                            }
 
-                          // Verifica si el valor de selectedPantry está en la lista
-                          if (selectedPantry != null &&
-                              !pantryList.contains(selectedPantry)) {
-                            // Si no está en la lista, selecciona el primero de la lista
-                            selectedPantry =
-                                pantryList.isNotEmpty ? pantryList[0] : null;
-                          }
-
-                          // Imprimir si hay un valor válido para selectedPantry
-                          print(
-                              "Valor de selectedPantry después de la verificación: $selectedPantry");
-
-                          return DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: selectedPantry,
-                              isExpanded: true,
-                              padding:
-                                  const EdgeInsets.symmetric(horizontal: 14),
-                              hint: const Text('Seleccione su despensa'),
-                              items: pantryList.map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(
-                                    value,
-                                    style: const TextStyle(
-                                      color: Color.fromARGB(255, 71, 79, 83),
-                                    ),
-                                  ),
-                                );
-                              }).toList(),
-                              onChanged: (newValue) {
-                                setState(() {
-                                  selectedPantry = newValue;
-                                });
-                              },
-                              dropdownColor: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              menuMaxHeight: 200, // Limita la altura del menú
-                              icon: const Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.grey,
+                            return DropdownButtonHideUnderline(
+                              child: ButtonTheme(
+                                alignedDropdown: true,
+                                child: DropdownButton<String>(
+                                  value: selectedPantryId,
+                                  isExpanded: true,
+                                  hint: const Text('Seleccione su despensa'),
+                                  items: pantryList.map((pantry) {
+                                    return DropdownMenuItem<String>(
+                                      value: pantry['id'],
+                                      child: Text(
+                                        pantry['nombre'],
+                                        style: const TextStyle(
+                                          color:
+                                              Color.fromARGB(255, 71, 79, 83),
+                                        ),
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (String? newValue) {
+                                    if (newValue != null) {
+                                      setState(() {
+                                        selectedPantryId = newValue;
+                                      });
+                                    }
+                                  },
+                                ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
+                            );
+                          },
+                        )),
 
                     const SizedBox(height: 15),
 
-                    // Botones de accion
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount: 2,
-                      mainAxisSpacing: 15,
-                      crossAxisSpacing: 40,
-                      childAspectRatio: 1.13,
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      children: [
-                        _buildActionCard(
-                          icon: Icons.add_circle,
-                          label: 'Agregar\nproductos',
-                          color: Color(0XFF4BC157).withOpacity(0.9),
-                          onTap: () {
-                            // Implementar acción
-                          },
-                        ),
-                        _buildActionCard(
-                          icon: Icons.remove_circle,
-                          label: 'Eliminar\nproductos',
-                          color: Color(0XFFE4352A).withOpacity(0.9),
-                          onTap: () {
-                            // Implementar acción
-                          },
-                        ),
-                        _buildActionCard(
-                          icon: Icons.edit_note_outlined,
-                          label: 'Editar\nproductos',
-                          color: Color(0XFF6DBDFF),
-                          onTap: () {
-                            // Implementar acción
-                          },
-                        ),
-                        _buildActionCard(
-                          icon: Icons.production_quantity_limits,
-                          label: 'Productos de\nbajo stock',
-                          color: Color(0XFFFFDA14).withOpacity(0.8),
-                          onTap: () {
-                            // Implementar acción
-                          },
-                        ),
-                      ],
+                    //Botones de acción
+                    _buildMainButton(
+                      icon: Icons.mic,
+                      title: 'Agregar productos',
+                      subtitle: 'Agrega productos por voz',
+                      onTap: () {
+                        if (selectedPantryId != null) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => VoicePage(
+                                despensaId: selectedPantryId!,
+                              ),
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Por favor seleccione una despensa')),
+                          );
+                        }
+                      },
+                    ),
+
+                    const SizedBox(height: 18),
+
+                    _buildMainButton(
+                      icon: Icons.format_list_bulleted,
+                      title: 'Ver productos',
+                      subtitle: 'Ir a listado de productos',
+                      onTap: () async {
+                        if (selectedPantryId != null) {
+                          String pantryName = await getSelectedPantryName();
+                          if (pantryName.isNotEmpty) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PantryView(
+                                  despensaId: selectedPantryId!,
+                                  despensaNombre: pantryName,
+                                  userId: _user!.uid,
+                                ),
+                              ),
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                  content: Text(
+                                      'No se pudo obtener el nombre de la despensa')),
+                            );
+                          }
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                                content:
+                                    Text('Por favor seleccione una despensa')),
+                          );
+                        }
+                      },
                     ),
                   ],
                 ),
@@ -476,47 +538,6 @@ class _HomePageState extends State<HomePage> {
               color: Color(0xFF3C3F44).withOpacity(0.85),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionCard({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(20),
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                color: color,
-                size: 44,
-              ),
-              const SizedBox(height: 10),
-              Text(
-                label,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                  color: Color(0xFF3A4247),
-                  height: 1.4,
-                ),
-              ),
-            ],
-          ),
         ),
       ),
     );
