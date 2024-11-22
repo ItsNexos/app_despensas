@@ -5,10 +5,15 @@ import 'package:flutter/material.dart';
 
 class RecipeViewPage extends StatefulWidget {
   final String recipeId;
-  final User user; // Se pasa el User al constructor
+  final User user;
+  final bool isPublic; // Indica si la receta es pública o pertenece al usuario
 
-  const RecipeViewPage({Key? key, required this.recipeId, required this.user})
-      : super(key: key);
+  const RecipeViewPage({
+    Key? key,
+    required this.recipeId,
+    required this.user,
+    this.isPublic = false, // Por defecto, no es pública
+  }) : super(key: key);
 
   @override
   _RecipeViewPageState createState() => _RecipeViewPageState();
@@ -17,6 +22,7 @@ class RecipeViewPage extends StatefulWidget {
 class _RecipeViewPageState extends State<RecipeViewPage> {
   Map<String, dynamic> recipeData = {};
   List<Map<String, dynamic>> ingredients = [];
+  Map<String, bool> userProductsMap = {};
 
   @override
   void initState() {
@@ -25,38 +31,44 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
   }
 
   Future<void> _fetchRecipeDetails() async {
-    final recipeDoc = await FirebaseFirestore.instance
+    // Cargar productos del usuario
+    final despensasRef = FirebaseFirestore.instance
         .collection('usuarios')
-        .doc(widget.user.uid) // Usamos widget.user.uid
-        .collection('recetas')
-        .doc(widget.recipeId)
-        .get();
+        .doc(widget.user.uid)
+        .collection('despensas');
 
+    final despensasSnapshot = await despensasRef.get();
+    for (var despensa in despensasSnapshot.docs) {
+      final productosSnapshot =
+          await despensa.reference.collection('productos').get();
+      for (var producto in productosSnapshot.docs) {
+        userProductsMap[producto['nombre']] = true; // Producto disponible
+      }
+    }
+
+    // Cargar receta y sus ingredientes
+    final recipeCollection = widget.isPublic
+        ? FirebaseFirestore.instance.collection('recetas') // Recetas públicas
+        : FirebaseFirestore.instance
+            .collection('usuarios')
+            .doc(widget.user.uid)
+            .collection('recetas'); // Recetas del usuario
+
+    final recipeDoc = await recipeCollection.doc(widget.recipeId).get();
     final ingredientesSnapshot =
         await recipeDoc.reference.collection('ingredientes').get();
 
     setState(() {
-      if (recipeDoc.data() != null) {
-        recipeData = recipeDoc.data()!;
-        recipeData['porciones'] = recipeDoc.data()!['porciones'] ?? 1;
-      } else {
-        recipeData = {};
-        print("recipeDoc.data() es null");
-      }
-
-      if (ingredientesSnapshot.docs.isNotEmpty) {
-        ingredients = ingredientesSnapshot.docs
-            .map((doc) => {
-                  'nombre': doc['nombre'] ?? 'Desconocido',
-                  'cantidad': doc['cantidad'] ?? 0,
-                  'medida': doc['medida'] ?? 'unidades',
-                  'principal': doc['principal'] ?? false,
-                })
-            .toList();
-      } else {
-        ingredients = [];
-        print("ingredientesSnapshot.docs está vacío");
-      }
+      recipeData = recipeDoc.data() ?? {};
+      recipeData['porciones'] = recipeData['porciones'] ?? 1;
+      ingredients = ingredientesSnapshot.docs.map((doc) {
+        return {
+          'nombre': doc['nombre'] ?? 'Desconocido',
+          'cantidad': doc['cantidad'] ?? 0,
+          'medida': doc['medida'] ?? 'unidades',
+          'principal': doc['principal'] ?? false,
+        };
+      }).toList();
     });
   }
 
@@ -69,6 +81,33 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
           user: widget.user, // Pasamos el user al modal
         );
       },
+    );
+  }
+
+  Future<void> _saveRecipe() async {
+    final publicRecipeRef =
+        FirebaseFirestore.instance.collection('recetas').doc(widget.recipeId);
+
+    final userRecipeRef = FirebaseFirestore.instance
+        .collection('usuarios')
+        .doc(widget.user.uid)
+        .collection('recetas')
+        .doc();
+
+    final recipeDoc = await publicRecipeRef.get();
+    final ingredientesSnapshot =
+        await publicRecipeRef.collection('ingredientes').get();
+
+    await userRecipeRef.set(recipeDoc.data()!);
+
+    for (var ingredientDoc in ingredientesSnapshot.docs) {
+      await userRecipeRef.collection('ingredientes').doc(ingredientDoc.id).set(
+            ingredientDoc.data(),
+          );
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Receta guardada exitosamente')),
     );
   }
 
@@ -95,7 +134,7 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
               ),
               const SizedBox(height: 10),
               Text(
-                "Porciones: ${recipeData['porciones']}", // Mostrar porciones
+                "Porciones: ${recipeData['porciones']}",
                 style: TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 20),
@@ -105,21 +144,23 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
               ),
               const SizedBox(height: 10),
               ...ingredients.map((ingredient) {
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    if (ingredient['principal'] == true)
-                      Icon(Icons.star,
-                          color: Colors
-                              .amber), // Ícono de estrella para ingredientes principales
-                  ],
+                final hasIngredient =
+                    userProductsMap[ingredient['nombre']] ?? false;
+                return ListTile(
+                  leading: Icon(
+                    hasIngredient ? Icons.check_circle : Icons.cancel,
+                    color: hasIngredient ? Colors.green : Colors.red,
+                    size: 20,
+                  ),
+                  title: Text(
+                    "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
+                    style: const TextStyle(fontSize: 18),
+                  ),
+                  trailing: ingredient['principal'] == true
+                      ? const Icon(Icons.star, color: Colors.amber)
+                      : null,
                 );
               }).toList(),
-
               const SizedBox(height: 20),
               Text(
                 "Preparación:",
@@ -131,34 +172,36 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
                 style: TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
-              // Botones en la parte inferior
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: _prepareRecipeModal,
-                    child: const Text("Preparar receta"),
-                  ),
-                  Row(
-                    children: [
-                      IconButton(
-                        icon: Icon(Icons.edit),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => RecipeEditPage(
-                                recipeId: widget.recipeId,
-                                user: widget.user,
-                              ),
+              // Opciones de acción dependiendo de si es pública o del usuario
+              if (widget.isPublic)
+                ElevatedButton(
+                  onPressed: _saveRecipe,
+                  child: const Text("Guardar Receta"),
+                )
+              else
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _prepareRecipeModal,
+                      child: const Text("Preparar receta"),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.edit),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => RecipeEditPage(
+                              recipeId: widget.recipeId,
+                              user: widget.user,
                             ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ),
             ],
           ),
         ),

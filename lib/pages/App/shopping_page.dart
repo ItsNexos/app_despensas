@@ -18,16 +18,14 @@ class _ShoppingPageState extends State<ShoppingPage>
   String _searchQuery = "";
   int bajoStockCount = 0;
   int vencidosCount = 0;
-  int registradosCount = 0;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
 
     _fetchCounts();
 
-    // Agrega este listener
     _searchController.addListener(() {
       setState(() {
         _searchQuery = _searchController.text.toLowerCase();
@@ -38,13 +36,11 @@ class _ShoppingPageState extends State<ShoppingPage>
   void _fetchCounts() async {
     int bajoStock = await _countBajoStock();
     int vencidos = await _countVencidos();
-    int registrados = await _countRegistrados();
 
     if (mounted) {
       setState(() {
         bajoStockCount = bajoStock;
         vencidosCount = vencidos;
-        registradosCount = registrados;
       });
     }
   }
@@ -56,7 +52,6 @@ class _ShoppingPageState extends State<ShoppingPage>
     super.dispose();
   }
 
-  // Método para verificar el estado de vencimiento de las unidades
   Color _getExpiryColor(String fechaVencimientoStr) {
     try {
       final fechaVencimiento =
@@ -71,11 +66,14 @@ class _ShoppingPageState extends State<ShoppingPage>
       }
     } catch (e) {
       print('Error al parsear fecha: $e');
-      return Colors.grey; // Color por defecto en caso de error
+      return Colors.grey;
     }
   }
 
-  // Sección Bajo Stock
+  IconData _getIconFromCode(int code) {
+    return IconData(code, fontFamily: 'MaterialIcons');
+  }
+
   Widget _buildBajoStockSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -105,7 +103,6 @@ class _ShoppingPageState extends State<ShoppingPage>
                   return const SizedBox.shrink();
                 }
 
-                // Filtra productos según el término de búsqueda
                 var productos =
                     productosSnapshot.data!.docs.where((productoDoc) {
                   final nombreProducto =
@@ -139,15 +136,21 @@ class _ShoppingPageState extends State<ShoppingPage>
                         }
                         return Card(
                           color: Colors.white,
+                          elevation: 4, // Eliminar sombra
                           margin: const EdgeInsets.symmetric(
                               horizontal: 20, vertical: 10),
                           child: ExpansionTile(
-                            leading: const Icon(
-                              Icons.shopping_basket,
-                              color: Color(
-                                  0xFF5D83B1), // Color del icono, puedes ajustarlo
-                              size: 30,
-                            ),
+                            leading: despensaDoc['icono'] != null
+                                ? Icon(
+                                    _getIconFromCode(despensaDoc['icono']),
+                                    size: 30,
+                                    color: Color(0xFF5D83B1),
+                                  )
+                                : const Icon(
+                                    Icons.shopping_basket,
+                                    color: Color(0xFF5D83B1),
+                                    size: 30,
+                                  ),
                             title: Text(
                               productoDoc['nombre'],
                               style: const TextStyle(
@@ -164,7 +167,7 @@ class _ShoppingPageState extends State<ShoppingPage>
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  "Cantidad actual: $cantidadActual",
+                                  "Cantidad actual: $cantidadActual/$stockMinimo",
                                   style: const TextStyle(
                                     color: Color(0xFF4C525A),
                                     fontWeight: FontWeight.w500,
@@ -202,19 +205,6 @@ class _ShoppingPageState extends State<ShoppingPage>
     );
   }
 
-  void _eliminarProducto(String productoId) {
-    FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(widget.userId)
-        .collection('lista_productos')
-        .doc(productoId)
-        .delete()
-        .catchError((error) {
-      print('Error al eliminar producto: $error');
-    });
-  }
-
-  // Sección Productos Vencidos
   Widget _buildPorVencerSection() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
@@ -244,7 +234,6 @@ class _ShoppingPageState extends State<ShoppingPage>
                   return const SizedBox.shrink();
                 }
 
-                // Filtra productos según el término de búsqueda
                 var productos =
                     productosSnapshot.data!.docs.where((productoDoc) {
                   final nombreProducto =
@@ -282,20 +271,27 @@ class _ShoppingPageState extends State<ShoppingPage>
                           }
                         }).toList();
 
-                        if (unidadesVencidas.isEmpty)
+                        if (unidadesVencidas.isEmpty) {
                           return const SizedBox.shrink();
+                        }
 
                         return Card(
                           color: Colors.white,
+                          elevation: 0, // Eliminar sombra
                           margin: const EdgeInsets.symmetric(
                               horizontal: 15, vertical: 8),
                           child: ExpansionTile(
-                            leading: const Icon(
-                              Icons.shopping_basket,
-                              color: Color(
-                                  0xFF5D83B1), // Color del icono, puedes ajustarlo
-                              size: 30,
-                            ),
+                            leading: despensaDoc['icono'] != null
+                                ? Icon(
+                                    _getIconFromCode(despensaDoc['icono']),
+                                    size: 30,
+                                    color: Color(0xFF5D83B1),
+                                  )
+                                : const Icon(
+                                    Icons.shopping_basket,
+                                    color: Color(0xFF5D83B1),
+                                    size: 30,
+                                  ),
                             title: Text(
                               productoDoc['nombre'],
                               style: const TextStyle(
@@ -312,10 +308,11 @@ class _ShoppingPageState extends State<ShoppingPage>
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                    "Productos vencidos: ${unidadesVencidas.length}",
-                                    style: TextStyle(
-                                        color: Color(0xFF4C525A),
-                                        fontWeight: FontWeight.w500)),
+                                  "Productos vencidos: ${unidadesVencidas.length}",
+                                  style: const TextStyle(
+                                      color: Color(0xFF4C525A),
+                                      fontWeight: FontWeight.w500),
+                                ),
                               ],
                             ),
                             children: unidadesVencidas.map<Widget>((unidadDoc) {
@@ -372,7 +369,6 @@ class _ShoppingPageState extends State<ShoppingPage>
       ),
       body: Column(
         children: [
-          // Barra de búsqueda
           Padding(
             padding:
                 const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -402,8 +398,6 @@ class _ShoppingPageState extends State<ShoppingPage>
               ),
             ),
           ),
-
-          // TabBar fuera del AppBar
           TabBar(
             controller: _tabController,
             labelColor: Colors.black,
@@ -416,7 +410,7 @@ class _ShoppingPageState extends State<ShoppingPage>
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     const Text('Bajo Stock'),
-                    const SizedBox(width: 4),
+                    const SizedBox(width: 5),
                     _buildCountBadge(bajoStockCount),
                   ],
                 ),
@@ -431,27 +425,14 @@ class _ShoppingPageState extends State<ShoppingPage>
                   ],
                 ),
               ),
-              Tab(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text('Registrados'),
-                    const SizedBox(width: 4),
-                    _buildCountBadge(registradosCount),
-                  ],
-                ),
-              ),
             ],
           ),
-
-          // Vistas de cada tab
           Expanded(
             child: TabBarView(
               controller: _tabController,
               children: [
                 _buildBajoStockSection(),
                 _buildPorVencerSection(),
-                _buildProductosCompradosSection(),
               ],
             ),
           ),
@@ -512,72 +493,27 @@ class _ShoppingPageState extends State<ShoppingPage>
       for (var productoDoc in productosSnapshot.docs) {
         final unidadesSnapshot =
             await productoDoc.reference.collection('unidades_productos').get();
-        for (var unidadDoc in unidadesSnapshot.docs) {
-          final fechaVencimientoStr = unidadDoc['fechaVencimiento'];
 
-          // Check if fechaVencimientoStr is non-null and non-empty
+        final hasVencidas = unidadesSnapshot.docs.any((unidadDoc) {
+          final fechaVencimientoStr = unidadDoc['fechaVencimiento'];
           if (fechaVencimientoStr != null && fechaVencimientoStr.isNotEmpty) {
             try {
               final fechaVencimiento =
                   DateFormat('dd/MM/yyyy').parse(fechaVencimientoStr);
-              if (fechaVencimiento.isBefore(DateTime.now())) {
-                vencidosCount++;
-              }
+              return fechaVencimiento.isBefore(DateTime.now());
             } catch (e) {
               print('Error parsing date: $fechaVencimientoStr');
+              return false;
             }
           }
+          return false;
+        });
+
+        if (hasVencidas) {
+          vencidosCount++;
         }
       }
     }
     return vencidosCount;
-  }
-
-  Future<int> _countRegistrados() async {
-    int registradosCount = 0;
-    final productosSnapshot = await FirebaseFirestore.instance
-        .collection('usuarios')
-        .doc(widget.userId)
-        .collection('lista_productos')
-        .get();
-    registradosCount = productosSnapshot.docs.length;
-    return registradosCount;
-  }
-
-  Widget _buildProductosCompradosSection() {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('usuarios')
-          .doc(widget.userId)
-          .collection('lista_productos')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error al cargar productos'));
-        }
-
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(child: Text('No hay productos comprados'));
-        }
-
-        var productos = snapshot.data!.docs;
-        return ListView.builder(
-          itemCount: productos.length,
-          itemBuilder: (context, index) {
-            var producto = productos[index];
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 15, vertical: 8),
-              child: ListTile(
-                title: Text(producto['nombre']),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () => _eliminarProducto(producto.id),
-                ),
-              ),
-            );
-          },
-        );
-      },
-    );
   }
 }
