@@ -175,7 +175,7 @@ class _VoicePageState extends State<VoicePage> {
         await productoDocRef.set({
           'nombre': nombre,
           'stockMinimo': stockMinimo,
-          'duracion': '',
+          'duracion': 0,
           'tipoDuracion': '',
           'medida': 'Unidades'
         });
@@ -218,36 +218,66 @@ class _VoicePageState extends State<VoicePage> {
       builder: (context) {
         String nombre = _products[index]['product'];
         int cantidad = _products[index]['quantity'];
+        final _formKey = GlobalKey<FormState>();
         return AlertDialog(
-          title: Text('Editar producto'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: TextEditingController(text: nombre),
-                onChanged: (value) {
-                  nombre = value;
-                },
-                decoration: InputDecoration(labelText: 'Nombre del producto'),
+          title: const Text('Editar producto'),
+          content: SingleChildScrollView(
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: TextEditingController(text: nombre),
+                    onChanged: (value) {
+                      nombre = value;
+                    },
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration:
+                        InputDecoration(labelText: 'Nombre del producto'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese un nombre';
+                      }
+                      return null;
+                    },
+                  ),
+                  TextFormField(
+                    controller:
+                        TextEditingController(text: cantidad.toString()),
+                    keyboardType: TextInputType.number,
+                    onChanged: (value) {
+                      cantidad = int.tryParse(value) ?? 0;
+                    },
+                    decoration: InputDecoration(labelText: 'Cantidad'),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Por favor ingrese una cantidad';
+                      }
+                      final cantidad = int.tryParse(value);
+                      if (cantidad == null) {
+                        return 'Por favor ingrese un número válido';
+                      }
+                      if (cantidad <= 0) {
+                        return 'La cantidad debe ser mayor a 0';
+                      }
+                      return null;
+                    },
+                  )
+                ],
               ),
-              TextField(
-                controller: TextEditingController(text: cantidad.toString()),
-                keyboardType: TextInputType.number,
-                onChanged: (value) {
-                  cantidad = int.tryParse(value) ?? 0;
-                },
-                decoration: InputDecoration(labelText: 'Cantidad'),
-              )
-            ],
+            ),
           ),
           actions: [
             TextButton(
               onPressed: () {
-                setState(() {
-                  _products[index]['product'] = formatProductName(nombre);
-                  _products[index]['quantity'] = cantidad;
-                });
-                Navigator.pop(context);
+                if (_formKey.currentState!.validate()) {
+                  setState(() {
+                    _products[index]['product'] = formatProductName(nombre);
+                    _products[index]['quantity'] = cantidad;
+                  });
+                  Navigator.pop(context);
+                }
               },
               child: Text('Guardar'),
             ),

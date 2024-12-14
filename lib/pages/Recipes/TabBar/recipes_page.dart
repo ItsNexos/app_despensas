@@ -1,5 +1,5 @@
-import 'package:app_despensas/pages/Recipes/TabBar/catalog.dart';
-import 'package:app_despensas/pages/Recipes/TabBar/my_recipes.dart';
+import 'package:app_despensas/pages/Recipes/TabBar/recipes.dart';
+import 'package:app_despensas/pages/Recipes/TabBar/suggestions.dart';
 import 'package:app_despensas/pages/Recipes/TabBar/explore_recipes.dart';
 import 'package:flutter/material.dart';
 
@@ -31,7 +31,7 @@ class _RecipesPageState extends State<RecipesPage>
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
-        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
+        backgroundColor: const Color(0xFFF4F6F8),
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF124580)),
@@ -47,18 +47,36 @@ class _RecipesPageState extends State<RecipesPage>
         ),
         bottom: TabBar(
           controller: _tabController,
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.grey,
+          indicatorColor: const Color(0xFF124580),
           tabs: const [
-            Tab(text: 'Mis recetas'),
-            Tab(text: 'Catálogo'),
-            Tab(text: 'Explorar'),
+            Tab(
+              child: Text(
+                'SUGERENCIAS',
+                style: TextStyle(fontSize: 13.8),
+              ),
+            ),
+            Tab(
+              child: Text(
+                'MI RECETARIO',
+                style: TextStyle(fontSize: 13.8),
+              ),
+            ),
+            Tab(
+              child: Text(
+                'EXPLORAR',
+                style: TextStyle(fontSize: 13.8),
+              ),
+            ),
           ],
         ),
       ),
       body: TabBarView(
         controller: _tabController,
         children: const [
-          MyRecipes(),
-          Catalog(),
+          Suggestions(),
+          Recipes(),
           ExploreRecipes(),
         ],
       ),

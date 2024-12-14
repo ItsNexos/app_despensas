@@ -57,19 +57,20 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
     final recipeDoc = await recipeCollection.doc(widget.recipeId).get();
     final ingredientesSnapshot =
         await recipeDoc.reference.collection('ingredientes').get();
-
-    setState(() {
-      recipeData = recipeDoc.data() ?? {};
-      recipeData['porciones'] = recipeData['porciones'] ?? 1;
-      ingredients = ingredientesSnapshot.docs.map((doc) {
-        return {
-          'nombre': doc['nombre'] ?? 'Desconocido',
-          'cantidad': doc['cantidad'] ?? 0,
-          'medida': doc['medida'] ?? 'unidades',
-          'principal': doc['principal'] ?? false,
-        };
-      }).toList();
-    });
+    if (mounted) {
+      setState(() {
+        recipeData = recipeDoc.data() ?? {};
+        recipeData['porciones'] = recipeData['porciones'] ?? 1;
+        ingredients = ingredientesSnapshot.docs.map((doc) {
+          return {
+            'nombre': doc['nombre'] ?? 'Desconocido',
+            'cantidad': doc['cantidad'] ?? 0,
+            'medida': doc['medida'] ?? 'unidades',
+            'principal': doc['principal'] ?? false,
+          };
+        }).toList();
+      });
+    }
   }
 
   void _prepareRecipeModal() {
@@ -114,8 +115,22 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
-        title: Text(recipeData['titulo'] ?? 'Receta'),
+        backgroundColor: const Color(0xFFF4F6F8),
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: Color(0xFF124580)),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text(
+          recipeData['titulo'] ?? 'Receta',
+          style: const TextStyle(
+            color: Color(0xFF124580),
+            fontWeight: FontWeight.bold,
+            fontSize: 24,
+          ),
+        ),
       ),
       body: Scrollbar(
         child: SingleChildScrollView(
@@ -123,89 +138,241 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                recipeData['titulo'] ?? '',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Categorías: ${recipeData['categorias']?.join(', ') ?? 'Sin categoría'}",
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                "Porciones: ${recipeData['porciones']}",
-                style: TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                "Ingredientes:",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              ...ingredients.map((ingredient) {
-                final hasIngredient =
-                    userProductsMap[ingredient['nombre']] ?? false;
-                return ListTile(
-                  leading: Icon(
-                    hasIngredient ? Icons.check_circle : Icons.cancel,
-                    color: hasIngredient ? Colors.green : Colors.red,
-                    size: 20,
-                  ),
-                  title: Text(
-                    "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                  trailing: ingredient['principal'] == true
-                      ? const Icon(Icons.star, color: Colors.amber)
-                      : null,
-                );
-              }).toList(),
-              const SizedBox(height: 20),
-              Text(
-                "Preparación:",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                recipeData['preparacion'] ?? '',
-                style: TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
-              // Opciones de acción dependiendo de si es pública o del usuario
-              if (widget.isPublic)
-                ElevatedButton(
-                  onPressed: _saveRecipe,
-                  child: const Text("Guardar Receta"),
-                )
-              else
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    ElevatedButton(
-                      onPressed: _prepareRecipeModal,
-                      child: const Text("Preparar receta"),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.edit),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => RecipeEditPage(
-                              recipeId: widget.recipeId,
-                              user: widget.user,
-                            ),
-                          ),
-                        );
-                      },
+              // Sección de datos principales (tiempo y porciones)
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 4,
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "TIEMPO ESTIMADO",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A618D),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.timer,
+                                size: 20, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${recipeData['tiempoEstimado']} min",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "PORCIONES",
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A618D),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Icon(Icons.people,
+                                size: 20, color: Colors.grey),
+                            const SizedBox(width: 8),
+                            Text(
+                              "${recipeData['porciones']}",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                "Etiquetas",
+                style: const TextStyle(
+                    fontSize: 16,
+                    color: Color(0xFF9EA5AF),
+                    fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 1),
+              // Etiquetas
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 8.0,
+                children: recipeData['categorias']?.map<Widget>((category) {
+                      return Chip(
+                        side: BorderSide(style: BorderStyle.none),
+                        label: Text(
+                          category,
+                          style: const TextStyle(
+                              color: Color(0xFF4c525a),
+                              fontWeight: FontWeight.w500),
+                        ),
+                        backgroundColor:
+                            const Color(0xFF51a5ea).withOpacity(0.5),
+                      );
+                    }).toList() ??
+                    [],
+              ),
+              const SizedBox(height: 20),
+
+              // Sección de ingredientes
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 4,
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.menu_book, size: 20, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          "INGREDIENTES",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A618D),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    ...ingredients.map((ingredient) {
+                      final hasIngredient =
+                          userProductsMap[ingredient['nombre']] ?? false;
+                      return Row(
+                        children: [
+                          Icon(
+                            hasIngredient ? Icons.check_circle : Icons.cancel,
+                            color: hasIngredient ? Colors.green : Colors.red,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              "${ingredient['cantidad']} ${ingredient['medida']} de ${ingredient['nombre']}",
+                              style: const TextStyle(fontSize: 16),
+                            ),
+                          ),
+                          if (ingredient['principal'] == true)
+                            const Icon(Icons.star, color: Colors.amber),
+                        ],
+                      );
+                    }).toList(),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Sección de preparación
+              Container(
+                width: double.infinity, // Ocupa todo el ancho disponible
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white, // Color de fondo
+                  borderRadius: BorderRadius.circular(16), // Bordes redondeados
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.grey.withOpacity(0.1),
+                      spreadRadius: 4,
+                      blurRadius: 6,
+                      offset: const Offset(0, 3), // Sombras sutiles
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: const [
+                        Icon(Icons.restaurant, size: 20, color: Colors.grey),
+                        SizedBox(width: 8),
+                        Text(
+                          "PREPARACIÓN",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4A618D),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      recipeData['preparacion'] ?? '',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 80.0)
             ],
           ),
         ),
       ),
+      floatingActionButton: widget.isPublic
+          ? FloatingActionButton.extended(
+              onPressed: _saveRecipe,
+              backgroundColor: const Color(0xFF2c5b92),
+              icon: const Icon(
+                Icons.favorite_border,
+                color: Colors.white,
+              ),
+              label: const Text(
+                "Guardar Receta",
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            )
+          : FloatingActionButton.extended(
+              onPressed: _prepareRecipeModal,
+              backgroundColor: const Color(0xFF2c5b92),
+              icon: const Icon(
+                Icons.kitchen,
+                color: Colors.white,
+              ),
+              label: const Text(
+                "Preparar Receta",
+                style:
+                    TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
+            ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 }
@@ -410,11 +577,18 @@ class _PrepareRecipeModalState extends State<PrepareRecipeModal> {
             }).toList(),
           const SizedBox(height: 20),
           if (isUsingProducts)
-            const CircularProgressIndicator()
+            const CircularProgressIndicator(
+              color: Color(0xFF124580),
+            )
           else
             ElevatedButton(
+              style:
+                  ElevatedButton.styleFrom(backgroundColor: Color(0xFF124580)),
               onPressed: _useProducts,
-              child: const Text("Usar productos"),
+              child: const Text(
+                "Usar productos",
+                style: TextStyle(color: Colors.white),
+              ),
             ),
         ],
       ),

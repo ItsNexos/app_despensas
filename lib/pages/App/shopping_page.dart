@@ -167,7 +167,15 @@ class _ShoppingPageState extends State<ShoppingPage>
                                 ),
                                 const SizedBox(width: 5),
                                 Text(
-                                  "Cantidad actual: $cantidadActual/$stockMinimo",
+                                  "Actual: $cantidadActual",
+                                  style: const TextStyle(
+                                    color: Color(0xFF4C525A),
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(width: 10),
+                                Text(
+                                  "Mínimo: $stockMinimo",
                                   style: const TextStyle(
                                     color: Color(0xFF4C525A),
                                     fontWeight: FontWeight.w500,
@@ -308,7 +316,7 @@ class _ShoppingPageState extends State<ShoppingPage>
                                 ),
                                 const SizedBox(width: 10),
                                 Text(
-                                  "Productos vencidos: ${unidadesVencidas.length}",
+                                  "Unidades vencidas: ${unidadesVencidas.length}",
                                   style: const TextStyle(
                                       color: Color(0xFF4C525A),
                                       fontWeight: FontWeight.w500),
@@ -380,13 +388,17 @@ class _ShoppingPageState extends State<ShoppingPage>
               ),
               child: TextField(
                 controller: _searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar producto',
+                decoration: InputDecoration(
+                  hintText: "Buscar producto",
                   hintStyle: TextStyle(color: Colors.white),
-                  prefixIcon: Icon(Icons.search, color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  prefixIcon: const Icon(Icons.search, color: Colors.white),
+                  filled: true,
+                  fillColor: const Color(0xFF5D83b1),
+                  contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(15.0),
+                    borderSide: BorderSide.none,
+                  ),
                 ),
                 style: const TextStyle(color: Colors.white),
                 textAlignVertical: TextAlignVertical.center,
@@ -401,7 +413,7 @@ class _ShoppingPageState extends State<ShoppingPage>
           TabBar(
             controller: _tabController,
             labelColor: Colors.black,
-            isScrollable: true,
+            isScrollable: false,
             unselectedLabelColor: Colors.grey,
             indicatorColor: const Color(0xFF124580),
             tabs: [
@@ -409,8 +421,11 @@ class _ShoppingPageState extends State<ShoppingPage>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Bajo Stock'),
-                    const SizedBox(width: 5),
+                    const Text(
+                      'Bajo Stock',
+                      style: TextStyle(fontSize: 15),
+                    ),
+                    const SizedBox(width: 4),
                     _buildCountBadge(bajoStockCount),
                   ],
                 ),
@@ -419,7 +434,10 @@ class _ShoppingPageState extends State<ShoppingPage>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Vencidos'),
+                    const Text(
+                      'Vencidos',
+                      style: TextStyle(fontSize: 15),
+                    ),
                     const SizedBox(width: 4),
                     _buildCountBadge(vencidosCount),
                   ],

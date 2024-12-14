@@ -1,21 +1,25 @@
+import 'package:app_despensas/pages/Recipes/Crud/recipe_edit.dart';
 import 'package:app_despensas/pages/Recipes/Crud/recipes_add.dart';
 import 'package:app_despensas/pages/Recipes/Views/recipes_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class MyRecipes extends StatefulWidget {
-  const MyRecipes({Key? key}) : super(key: key);
+class Recipes extends StatefulWidget {
+  const Recipes({Key? key}) : super(key: key);
 
   @override
-  _MyRecipesState createState() => _MyRecipesState();
+  _RecipesState createState() => _RecipesState();
 }
 
-class _MyRecipesState extends State<MyRecipes> {
+class _RecipesState extends State<Recipes> {
   final User? user = FirebaseAuth.instance.currentUser;
-  List<Map<String, dynamic>> sugeridas = [];
+
   List<Map<String, dynamic>> todas = [];
   bool isLoading = true;
+  List<Map<String, dynamic>> filteredRecipes =
+      []; // Lista para las recetas filtradas
+  String searchQuery = ""; // Texto ingresado en la barra de búsqueda
 
   @override
   void initState() {
@@ -47,53 +51,35 @@ class _MyRecipesState extends State<MyRecipes> {
     List<Map<String, dynamic>> todasRecetas = await Future.wait(
       recetasSnapshot.docs.map((recipeDoc) async {
         final recipeData = recipeDoc.data();
-        final ingredientesSnapshot =
-            await recipeDoc.reference.collection('ingredientes').get();
-
-        final allIngredients = ingredientesSnapshot.docs
-            .map((doc) => doc['nombre'] as String)
-            .toList();
-        final mainIngredients = ingredientesSnapshot.docs
-            .where((doc) => doc['principal'] == true)
-            .map((doc) => doc['nombre'] as String)
-            .toList();
-
-        final ownedMainIngredients = mainIngredients
-            .where((ingredient) => userProducts.contains(ingredient))
-            .toList();
-        final missingMainIngredients = mainIngredients
-            .where((ingredient) => !userProducts.contains(ingredient))
-            .toList();
-
-        final percentageMatch = ((userProducts
-                        .where((product) => allIngredients.contains(product))
-                        .length /
-                    allIngredients.length) *
-                100)
-            .toInt();
-
         return {
           'id': recipeDoc.id,
           'titulo': recipeData['titulo'],
           'tiempoEstimado': recipeData['tiempoEstimado'],
           'porciones': recipeData['porciones'] ?? 1,
-          'ingredientes': allIngredients,
-          'mainIngredients': mainIngredients,
-          'ownedMainIngredients': ownedMainIngredients,
-          'missingMainIngredients': missingMainIngredients,
-          'percentageMatch': percentageMatch,
         };
       }).toList(),
     );
     if (mounted) {
       setState(() {
-        sugeridas = todasRecetas
-            .where((recipe) => recipe['missingMainIngredients'].isEmpty)
-            .toList();
         todas = todasRecetas;
+        filteredRecipes = todasRecetas;
         isLoading = false;
       });
     }
+  }
+
+  void _filterRecipes(String query) {
+    setState(() {
+      searchQuery = query;
+      if (query.isEmpty) {
+        filteredRecipes = List.from(todas); // Restaura todas las recetas
+      } else {
+        filteredRecipes = todas
+            .where((recipe) =>
+                recipe['titulo'].toLowerCase().contains(query.toLowerCase()))
+            .toList();
+      }
+    });
   }
 
   void _showDeleteConfirmationDialog(String recipeId) {
@@ -150,14 +136,31 @@ class _MyRecipesState extends State<MyRecipes> {
     );
   }
 
-  Color _getPercentageColor(int percentage) {
-    if (percentage >= 75) return Colors.green;
-    if (percentage >= 50) return Colors.orange;
-    return Colors.red;
+  Widget _buildSearchBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      child: TextField(
+        onChanged: _filterRecipes, // Llama al método para filtrar recetas
+        decoration: InputDecoration(
+          hintText: "Buscar recetas",
+          hintStyle: TextStyle(color: Colors.white),
+          prefixIcon: const Icon(Icons.search, color: Colors.white),
+          filled: true,
+          fillColor: const Color(0xFF5D83b1),
+          contentPadding: const EdgeInsets.symmetric(vertical: 0.0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(15.0),
+            borderSide: BorderSide.none,
+          ),
+        ),
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
   }
 
   Widget _buildRecipeTile(Map<String, dynamic> recipe) {
     return Card(
+      color: Colors.white,
       elevation: 3,
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       shape: RoundedRectangleBorder(
@@ -180,7 +183,7 @@ class _MyRecipesState extends State<MyRecipes> {
           recipe['titulo'],
           style: const TextStyle(
             fontWeight: FontWeight.bold,
-            fontSize: 18,
+            fontSize: 16,
           ),
         ),
         subtitle: Column(
@@ -188,51 +191,44 @@ class _MyRecipesState extends State<MyRecipes> {
           children: [
             Row(
               children: [
-                const Icon(Icons.timer, size: 16, color: Colors.grey),
+                const Icon(Icons.timer,
+                    size: 16, color: Color.fromARGB(205, 114, 163, 236)),
                 const SizedBox(width: 5),
                 Text("${recipe['tiempoEstimado']} min"),
                 const SizedBox(width: 15),
-                const Icon(Icons.people, size: 16, color: Colors.grey),
+                const Icon(Icons.people,
+                    size: 16, color: Color.fromARGB(205, 114, 163, 236)),
                 const SizedBox(width: 5),
                 Text("${recipe['porciones']}"),
               ],
             ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Text(
-                  "Coincidencias: ${recipe['percentageMatch']}%",
-                  style: TextStyle(
-                    color: _getPercentageColor(recipe['percentageMatch']),
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
             const SizedBox(height: 5),
-            Row(
-              children: [
-                if (recipe['missingMainIngredients'].isNotEmpty)
-                  Row(
-                    children: const [
-                      SizedBox(width: 4),
-                      Icon(Icons.warning, size: 14, color: Colors.amber),
-                      SizedBox(width: 5),
-                      Text(
-                        "Faltan ingredientes principales",
-                        style: TextStyle(color: Colors.amber),
-                      ),
-                    ],
-                  ),
-              ],
-            ),
           ],
         ),
-        trailing: IconButton(
-          icon: const Icon(Icons.delete, color: Colors.red),
-          onPressed: () {
-            _showDeleteConfirmationDialog(recipe['id']);
-          },
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Colors.blue),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => RecipeEditPage(
+                      recipeId: recipe['id'], // Pasa el ID de la receta
+                      user: user!, // Pasa el usuario actual
+                    ),
+                  ),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.delete, color: Colors.red),
+              onPressed: () {
+                _showDeleteConfirmationDialog(recipe['id']);
+              },
+            ),
+          ],
         ),
       ),
     );
@@ -241,32 +237,53 @@ class _MyRecipesState extends State<MyRecipes> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF4F6F8),
       body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                ExpansionTile(
-                  title: const Text(
-                    "Sugeridas",
+          ? const Center(
+              child: CircularProgressIndicator(
+              color: Color(0xFF124580),
+            ))
+          : todas.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No existen recetas',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
+                      color: Color(0xFF124580),
                     ),
                   ),
-                  children: sugeridas.map(_buildRecipeTile).toList(),
-                ),
-                ExpansionTile(
-                  title: const Text(
-                    "Todas",
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                )
+              : Column(
+                  children: [
+                    _buildSearchBar(), // Agrega la barra de búsqueda
+                    Expanded(
+                      child: filteredRecipes.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No hay coincidencias',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF124580),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredRecipes.length +
+                                  1, // Incrementa el tamaño para el espacio
+                              itemBuilder: (context, index) {
+                                if (index == filteredRecipes.length) {
+                                  return const SizedBox(
+                                      height:
+                                          80.0); // Espacio debajo de la lista
+                                }
+                                return _buildRecipeTile(filteredRecipes[index]);
+                              },
+                            ),
                     ),
-                  ),
-                  children: todas.map(_buildRecipeTile).toList(),
+                  ],
                 ),
-              ],
-            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(
@@ -276,9 +293,15 @@ class _MyRecipesState extends State<MyRecipes> {
             ),
           );
         },
-        label: const Text("Añadir receta"),
-        icon: const Icon(Icons.add),
-        backgroundColor: const Color(0xFF5D83B1),
+        label: const Text(
+          "Añadir receta",
+          style: TextStyle(color: Colors.white),
+        ),
+        icon: const Icon(
+          Icons.add,
+          color: Colors.white,
+        ),
+        backgroundColor: const Color(0xFF2c5b92),
       ),
     );
   }

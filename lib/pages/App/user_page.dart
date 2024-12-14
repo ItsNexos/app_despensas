@@ -209,7 +209,10 @@ class _UserPageState extends State<UserPage> {
                 ),
               ],
             )
-          : const Center(child: CircularProgressIndicator()),
+          : const Center(
+              child: CircularProgressIndicator(
+              color: Color(0xFF124580),
+            )),
     );
   }
 

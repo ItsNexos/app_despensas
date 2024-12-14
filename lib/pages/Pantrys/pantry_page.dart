@@ -14,6 +14,7 @@ class PantryPage extends StatefulWidget {
 }
 
 class _PantryPageState extends State<PantryPage> {
+  bool isLoading = true;
   List<Map<String, dynamic>> pantries = [];
   List<Map<String, dynamic>> filteredPantries = [];
   Map<String, Color> pantryIconColors = {};
@@ -74,6 +75,10 @@ class _PantryPageState extends State<PantryPage> {
   }
 
   Future<void> _loadPantries(String userId) async {
+    setState(() {
+      isLoading = true; // Mostrar el indicador
+    });
+
     final querySnapshot = await FirebaseFirestore.instance
         .collection('usuarios')
         .doc(userId)
@@ -110,6 +115,7 @@ class _PantryPageState extends State<PantryPage> {
       setState(() {
         pantries = loadedPantries;
         filteredPantries = pantries;
+        isLoading = false; // Ocultar el indicador
       });
     }
   }
@@ -152,187 +158,232 @@ class _PantryPageState extends State<PantryPage> {
         //   ),
         // ],
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF5D83B1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar despensa',
-                  hintStyle: TextStyle(color: Colors.white),
-                  prefixIcon: Icon(Icons.search, color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                ),
-                style: const TextStyle(color: Colors.white),
-                textAlignVertical: TextAlignVertical.center,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16.0),
-              itemCount: filteredPantries.length,
-              itemBuilder: (context, index) {
-                final pantry = filteredPantries[index];
-                return GestureDetector(
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => PantryView(
-                          despensaId: pantry['id'],
-                          despensaNombre: pantry['title'],
-                          userId: user!.uid,
-                        ),
-                      ),
-                    );
-                  },
-                  child: Container(
-                    height: 80,
-                    margin: const EdgeInsets.only(bottom: 16.0),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color.fromRGBO(158, 158, 158, 1)
-                              .withOpacity(0.1),
-                          spreadRadius: 1,
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                  color: Color(0xFF124580)), // Indicador de carga
+            )
+          : pantries.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No existen despensas',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF124580),
                     ),
-                    child: Row(
-                      children: [
-                        // Parte del ícono con fondo gris
-                        Container(
-                          width: 80,
-                          height: 80,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEBECED), // Fondo gris del ícono
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(10),
-                              bottomLeft: Radius.circular(10),
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Color.fromRGBO(182, 182, 182, 0.205),
-                                spreadRadius: 1,
-                                blurRadius: 4,
-                                offset: const Offset(-5, 1),
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            pantry['icon'],
-                            size: 45,
-                            color: pantry['iconColor'],
+                  ),
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: "Buscar despensas",
+                          hintStyle: TextStyle(color: Colors.white),
+                          prefixIcon:
+                              const Icon(Icons.search, color: Colors.white),
+                          filled: true,
+                          fillColor: const Color(0xFF5D83b1),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 0.0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.0),
+                            borderSide: BorderSide.none,
                           ),
                         ),
-
-                        // Parte de la información
-                        Expanded(
-                          child: Padding(
-                            padding:
-                                const EdgeInsets.symmetric(horizontal: 8.0),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment:
-                                      MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      pantry['title'],
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 16,
-                                        color: Color(0xFF3A4247),
+                        style: const TextStyle(color: Colors.white),
+                        textAlignVertical: TextAlignVertical.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: filteredPantries.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No hay coincidencias',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF124580),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: const EdgeInsets.all(16.0),
+                              itemCount: filteredPantries.length,
+                              itemBuilder: (context, index) {
+                                final pantry = filteredPantries[index];
+                                return GestureDetector(
+                                  onTap: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => PantryView(
+                                          despensaId: pantry['id'],
+                                          despensaNombre: pantry['title'],
+                                          userId: user!.uid,
+                                        ),
                                       ),
+                                    );
+                                  },
+                                  child: Container(
+                                    height: 80,
+                                    margin: const EdgeInsets.only(bottom: 16.0),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(10),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: const Color.fromRGBO(
+                                                  158, 158, 158, 1)
+                                              .withOpacity(0.1),
+                                          spreadRadius: 1,
+                                          blurRadius: 6,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
                                     ),
-                                    // Menú de 3 puntos
-                                    PopupMenuButton<String>(
-                                      icon: const Icon(Icons.more_horiz),
-                                      onSelected: (String value) {
-                                        if (value == 'edit') {
-                                          _showEditPantryDialog(
-                                              context, pantry);
-                                        } else if (value == 'delete') {
-                                          _showDeleteConfirmationDialog(
-                                              context, pantry['id']);
-                                        }
-                                      },
-                                      itemBuilder: (BuildContext context) => [
-                                        const PopupMenuItem(
-                                          value: 'edit',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.edit),
-                                              SizedBox(width: 8),
-                                              Text('Editar'),
+                                    child: Row(
+                                      children: [
+                                        // Parte del ícono con fondo gris
+                                        Container(
+                                          width: 80,
+                                          height: 80,
+                                          decoration: const BoxDecoration(
+                                            color: Color(
+                                                0xFFEBECED), // Fondo gris del ícono
+                                            borderRadius: BorderRadius.only(
+                                              topLeft: Radius.circular(10),
+                                              bottomLeft: Radius.circular(10),
+                                            ),
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: Color.fromRGBO(
+                                                    182, 182, 182, 0.205),
+                                                spreadRadius: 1,
+                                                blurRadius: 4,
+                                                offset: const Offset(-5, 1),
+                                              ),
                                             ],
                                           ),
+                                          child: Icon(
+                                            pantry['icon'],
+                                            size: 45,
+                                            color: pantry['iconColor'],
+                                          ),
                                         ),
-                                        const PopupMenuItem(
-                                          value: 'delete',
-                                          child: Row(
-                                            children: [
-                                              Icon(Icons.delete),
-                                              SizedBox(width: 8),
-                                              Text('Eliminar'),
-                                            ],
+
+                                        // Parte de la información
+                                        Expanded(
+                                          child: Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                                horizontal: 8.0),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      pantry['title'],
+                                                      style: const TextStyle(
+                                                        fontWeight:
+                                                            FontWeight.w600,
+                                                        fontSize: 16,
+                                                        color:
+                                                            Color(0xFF3A4247),
+                                                      ),
+                                                    ),
+                                                    // Menú de 3 puntos
+                                                    PopupMenuButton<String>(
+                                                      icon: const Icon(
+                                                          Icons.more_horiz),
+                                                      onSelected:
+                                                          (String value) {
+                                                        if (value == 'edit') {
+                                                          _showEditPantryDialog(
+                                                              context, pantry);
+                                                        } else if (value ==
+                                                            'delete') {
+                                                          _showDeleteConfirmationDialog(
+                                                              context,
+                                                              pantry['id']);
+                                                        }
+                                                      },
+                                                      itemBuilder: (BuildContext
+                                                              context) =>
+                                                          [
+                                                        const PopupMenuItem(
+                                                          value: 'edit',
+                                                          child: Row(
+                                                            children: [
+                                                              Icon(Icons.edit),
+                                                              SizedBox(
+                                                                  width: 8),
+                                                              Text('Editar'),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        const PopupMenuItem(
+                                                          value: 'delete',
+                                                          child: Row(
+                                                            children: [
+                                                              Icon(
+                                                                  Icons.delete),
+                                                              SizedBox(
+                                                                  width: 8),
+                                                              Text('Eliminar'),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                Row(
+                                                  children: [
+                                                    _buildStatusIcon(
+                                                        Icons.event_busy,
+                                                        Colors.red),
+                                                    const SizedBox(width: 16),
+                                                    _buildStatusIcon(
+                                                        Icons.event,
+                                                        Colors.orange),
+                                                    const SizedBox(width: 16),
+                                                    _buildStatusIcon(
+                                                        Icons.event_available,
+                                                        Colors.green),
+                                                    const Spacer(),
+                                                    // Agregar la cantidad de unidades antes de la flecha
+
+                                                    Icon(
+                                                      Icons.chevron_right,
+                                                      color: Colors.grey[
+                                                          600], // Puedes personalizar el color
+                                                      size:
+                                                          24, // Ajusta el tamaño del ícono según tus preferencias
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
                                           ),
                                         ),
                                       ],
                                     ),
-                                  ],
-                                ),
-                                Row(
-                                  children: [
-                                    _buildStatusIcon(
-                                        Icons.event_busy, Colors.red),
-                                    const SizedBox(width: 16),
-                                    _buildStatusIcon(
-                                        Icons.event, Colors.orange),
-                                    const SizedBox(width: 16),
-                                    _buildStatusIcon(
-                                        Icons.event_available, Colors.green),
-                                    const Spacer(),
-                                    // Agregar la cantidad de unidades antes de la flecha
-
-                                    Icon(
-                                      Icons.chevron_right,
-                                      color: Colors.grey[
-                                          600], // Puedes personalizar el color
-                                      size:
-                                          24, // Ajusta el tamaño del ícono según tus preferencias
-                                    ),
-                                  ],
-                                ),
-                              ],
+                                  ),
+                                );
+                              },
                             ),
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
+                  ],
+                ),
       floatingActionButton: Align(
         alignment: Alignment.bottomRight, // Alinea el botón a la derecha
         child: Container(
@@ -379,9 +430,9 @@ class _PantryPageState extends State<PantryPage> {
   // Guardar nueva despensa
   void _showAddPantryDialog(BuildContext context) {
     String name = '';
-    String category = '';
     IconData tempSelectedIcon = selectedIcon; // Temporal para el icono
     bool isLoading = false; // Bandera para el círculo de carga
+    final _formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -390,45 +441,57 @@ class _PantryPageState extends State<PantryPage> {
           builder: (context, setState) {
             return AlertDialog(
               title: const Text('Nueva Despensa'),
-              content: isLoading
-                  ? const Center(child: CircularProgressIndicator())
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        TextField(
-                          decoration: const InputDecoration(hintText: 'Nombre'),
-                          onChanged: (value) {
-                            name = value;
-                          },
-                        ),
-                        const SizedBox(height: 10),
-                        DropdownButton<IconData>(
-                          value: tempSelectedIcon,
-                          isExpanded: true,
-                          hint: const Text('Seleccionar ícono'),
-                          items: iconNames.entries.map((entry) {
-                            return DropdownMenuItem<IconData>(
-                              value: entry.key,
-                              child: Row(
-                                children: [
-                                  Icon(entry.key,
-                                      size: 24, color: const Color(0xFF5E6773)),
-                                  const SizedBox(width: 8),
-                                  Text(entry
-                                      .value), // Nombre representativo del ícono
-                                ],
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              tempSelectedIcon =
-                                  value!; // Actualiza el icono temporalmente
-                            });
-                          },
-                        ),
-                      ],
-                    ),
+              content: SingleChildScrollView(
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        decoration: const InputDecoration(hintText: 'Nombre'),
+                        onChanged: (value) {
+                          name = value;
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Por favor ingrese un nombre';
+                          }
+                          if (value.length > 20) {
+                            return 'El nombre es demasiado largo';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 10),
+                      DropdownButton<IconData>(
+                        value: tempSelectedIcon,
+                        isExpanded: true,
+                        hint: const Text('Seleccionar ícono'),
+                        items: iconNames.entries.map((entry) {
+                          return DropdownMenuItem<IconData>(
+                            value: entry.key,
+                            child: Row(
+                              children: [
+                                Icon(entry.key,
+                                    size: 24, color: const Color(0xFF5E6773)),
+                                const SizedBox(width: 8),
+                                Text(entry
+                                    .value), // Nombre representativo del ícono
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (value) {
+                          setState(() {
+                            tempSelectedIcon =
+                                value!; // Actualiza el icono temporalmente
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               actions: [
                 TextButton(
                   onPressed: () {
@@ -438,48 +501,32 @@ class _PantryPageState extends State<PantryPage> {
                 ),
                 TextButton(
                   onPressed: () async {
-                    // Validar que los campos no estén vacíos
-                    if (name.isEmpty || category.isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content:
-                              Text('Por favor, completa todos los campos.'),
-                        ),
-                      );
-                      return;
-                    }
+                    if (_formKey.currentState!.validate()) {
+                      // Guardar el icono seleccionado en la variable global
+                      selectedIcon = tempSelectedIcon;
 
-                    setState(() {
-                      isLoading = true; // Activar círculo de carga
-                    });
-
-                    // Guardar el icono seleccionado en la variable global
-                    selectedIcon = tempSelectedIcon;
-
-                    // Guardar en Firestore
-                    await FirebaseFirestore.instance
-                        .collection('usuarios')
-                        .doc(widget.userId)
-                        .collection('despensas')
-                        .add({
-                      'nombre': name,
-                      'icono': selectedIcon.codePoint,
-                    }).then((_) {
-                      _loadPantries(widget.userId);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Despensa creada exitosamente')),
-                      );
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Error: ${error.toString()}')),
-                      );
-                    }).whenComplete(() {
-                      setState(() {
-                        isLoading = false; // Desactivar círculo de carga
+                      // Guardar en Firestore
+                      await FirebaseFirestore.instance
+                          .collection('usuarios')
+                          .doc(widget.userId)
+                          .collection('despensas')
+                          .add({
+                        'nombre': name,
+                        'icono': selectedIcon.codePoint,
+                      }).then((_) {
+                        _loadPantries(widget.userId);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                              content: Text('Despensa creada exitosamente')),
+                        );
+                      }).catchError((error) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error: ${error.toString()}')),
+                        );
+                      }).whenComplete(() {
+                        Navigator.pop(context);
                       });
-                      Navigator.pop(context);
-                    });
+                    }
                   },
                   child: const Text('Agregar'),
                 ),
@@ -524,92 +571,111 @@ class _PantryPageState extends State<PantryPage> {
       );
     }
 
+    final _formKey = GlobalKey<FormState>();
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(builder: (context, setState) {
           return AlertDialog(
             title: const Text('Editar Despensa'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameController,
-                  decoration: const InputDecoration(hintText: 'Nombre'),
-                  onChanged: (value) {
-                    name = value;
-                  },
-                ),
-                const SizedBox(height: 10),
-                DropdownButton<IconData>(
-                  value: currentIcon,
-                  isExpanded: true,
-                  hint: const Text('Seleccionar ícono'),
-                  items: iconNames.entries.map((entry) {
-                    return DropdownMenuItem<IconData>(
-                      value: entry.key,
-                      child: Row(
-                        children: [
-                          Icon(entry.key, size: 24, color: tempIconColor),
-                          const SizedBox(width: 8),
-                          Text(entry.value),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setState(() {
-                      currentIcon = value!;
-                    });
-                  },
-                ),
-                const SizedBox(height: 10),
-                Row(
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('Color del ícono: '),
-                    const SizedBox(width: 8),
-                    InkWell(
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (BuildContext context) {
-                            return AlertDialog(
-                              title: const Text('Seleccionar color'),
-                              content: SingleChildScrollView(
-                                child: Wrap(
-                                  spacing: 8,
-                                  runSpacing: 8,
-                                  children: [
-                                    _buildColorOption(Colors.blue, setState),
-                                    _buildColorOption(Colors.red, setState),
-                                    _buildColorOption(Colors.green, setState),
-                                    _buildColorOption(Colors.orange, setState),
-                                    _buildColorOption(Colors.purple, setState),
-                                    _buildColorOption(Colors.teal, setState),
-                                    _buildColorOption(Colors.pink, setState),
-                                    _buildColorOption(Colors.brown, setState),
-                                    _buildColorOption(
-                                        const Color(0xFF5E6773), setState),
-                                  ],
-                                ),
-                              ),
+                    TextFormField(
+                      controller: nameController,
+                      decoration: const InputDecoration(hintText: 'Nombre'),
+                      onChanged: (value) {
+                        name = value;
+                      },
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese un nombre';
+                        }
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    DropdownButton<IconData>(
+                      value: currentIcon,
+                      isExpanded: true,
+                      hint: const Text('Seleccionar ícono'),
+                      items: iconNames.entries.map((entry) {
+                        return DropdownMenuItem<IconData>(
+                          value: entry.key,
+                          child: Row(
+                            children: [
+                              Icon(entry.key, size: 24, color: tempIconColor),
+                              const SizedBox(width: 8),
+                              Text(entry.value),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          currentIcon = value!;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Text('Color del ícono: '),
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  title: const Text('Seleccionar color'),
+                                  content: SingleChildScrollView(
+                                    child: Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        _buildColorOption(
+                                            Colors.blue, setState),
+                                        _buildColorOption(Colors.red, setState),
+                                        _buildColorOption(
+                                            Colors.green, setState),
+                                        _buildColorOption(
+                                            Colors.orange, setState),
+                                        _buildColorOption(
+                                            Colors.purple, setState),
+                                        _buildColorOption(
+                                            Colors.teal, setState),
+                                        _buildColorOption(
+                                            Colors.pink, setState),
+                                        _buildColorOption(
+                                            Colors.brown, setState),
+                                        _buildColorOption(
+                                            const Color(0xFF5E6773), setState),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
                             );
                           },
-                        );
-                      },
-                      child: Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          color: tempIconColor,
-                          border: Border.all(color: Colors.grey),
-                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              color: tempIconColor,
+                              border: Border.all(color: Colors.grey),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ],
                 ),
-              ],
+              ),
             ),
             actions: [
               TextButton(
@@ -619,54 +685,46 @@ class _PantryPageState extends State<PantryPage> {
               TextButton(
                 onPressed: () async {
                   // Validación: Nombre no puede estar vacío
-                  if (name.trim().isEmpty) {
+                  if (_formKey.currentState!.validate()) {
+                    await FirebaseFirestore.instance
+                        .collection('usuarios')
+                        .doc(widget.userId)
+                        .collection('despensas')
+                        .doc(pantry['id'])
+                        .update({
+                      'nombre': name,
+                      'icono': currentIcon.codePoint,
+                    });
+
+                    // Guardar color del ícono en SharedPreferences y actualizar estado
+                    await _saveIconColor(pantry['id'], tempIconColor);
+
+                    // Actualizar el estado con los cambios definitivos
+                    setState(() {
+                      pantryIconColors[pantry['id']] = tempIconColor;
+                      pantries = pantries.map((p) {
+                        if (p['id'] == pantry['id']) {
+                          return {
+                            ...p,
+                            'title': name,
+                            'icon': currentIcon,
+                            'iconColor': tempIconColor,
+                          };
+                        }
+                        return p;
+                      }).toList();
+                      filteredPantries = pantries;
+                    });
+
+                    Navigator.pop(context); // Cerrar el diálogo de edición
+
+                    // Mostrar mensaje de éxito
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('El nombre no puede estar vacío.'),
+                        content: Text('Despensa actualizada exitosamente!'),
                       ),
                     );
-                    return;
                   }
-
-                  // Guardar cambios en Firestore
-                  await FirebaseFirestore.instance
-                      .collection('usuarios')
-                      .doc(widget.userId)
-                      .collection('despensas')
-                      .doc(pantry['id'])
-                      .update({
-                    'nombre': name,
-                    'icono': currentIcon.codePoint,
-                  });
-
-                  // Guardar color del ícono en SharedPreferences y actualizar estado
-                  await _saveIconColor(pantry['id'], tempIconColor);
-
-                  // Actualizar el estado con los cambios definitivos
-                  setState(() {
-                    pantryIconColors[pantry['id']] = tempIconColor;
-                    pantries = pantries.map((p) {
-                      if (p['id'] == pantry['id']) {
-                        return {
-                          ...p,
-                          'title': name,
-                          'icon': currentIcon,
-                          'iconColor': tempIconColor,
-                        };
-                      }
-                      return p;
-                    }).toList();
-                    filteredPantries = pantries;
-                  });
-
-                  Navigator.pop(context); // Cerrar el diálogo de edición
-
-                  // Mostrar mensaje de éxito
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Despensa actualizada exitosamente!'),
-                    ),
-                  );
                 },
                 child: const Text('Guardar'),
               ),

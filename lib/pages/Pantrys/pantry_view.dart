@@ -22,6 +22,7 @@ class PantryView extends StatefulWidget {
 }
 
 class _PantryViewState extends State<PantryView> {
+  bool isLoading = false;
   List<Map<String, dynamic>> products = [];
   List<Map<String, dynamic>> filteredProducts = [];
   List<Map<String, dynamic>> productosAgrupados = [];
@@ -47,6 +48,9 @@ class _PantryViewState extends State<PantryView> {
 
   // Cargar productos agrupados por nombre
   Future<void> _loadProductos() async {
+    setState(() {
+      isLoading = true; // Mostrar el indicador
+    });
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
@@ -62,6 +66,7 @@ class _PantryViewState extends State<PantryView> {
       final stockMinimo = doc['stockMinimo'];
       final duracion = doc['duracion'];
       final tipoDuracion = doc['tipoDuracion'];
+      final medida = doc['medida'];
 
       QuerySnapshot unidadesSnapshot = await FirebaseFirestore.instance
           .collection('usuarios')
@@ -87,12 +92,14 @@ class _PantryViewState extends State<PantryView> {
         'stockMinimo': stockMinimo,
         'unidades': unidades,
         'duracion': duracion,
-        'tipoDuracion': tipoDuracion
+        'tipoDuracion': tipoDuracion,
+        'medida': medida
       });
     }
 
     if (mounted) {
       setState(() {
+        isLoading = false;
         productosAgrupados = productosList;
         products = productosList;
         filteredProducts = productosList;
@@ -114,7 +121,7 @@ class _PantryViewState extends State<PantryView> {
     final _nombreController = TextEditingController();
     final _cantidadController = TextEditingController();
     final _stockMinimoController = TextEditingController();
-    String _medidaSeleccionada = 'Unidades'; // Default selection
+    String _medidaSeleccionada = 'Unidades';
     final _duracionController = TextEditingController();
     String _tipoDuracionSeleccionada = 'Días';
 
@@ -197,7 +204,7 @@ class _PantryViewState extends State<PantryView> {
                       if (value != null && value.isNotEmpty) {
                         final stock = int.tryParse(value);
                         if (stock == null || stock < 0) {
-                          return 'El stock mínimo debe ser un número válido mayor o igual a 0';
+                          return 'Valor inválido';
                         }
                       }
                       return null;
@@ -328,76 +335,152 @@ class _PantryViewState extends State<PantryView> {
         TextEditingController(text: producto['stockMinimo'].toString());
     final _duracionController =
         TextEditingController(text: producto['duracion'].toString());
+
     final _tipoDuracionController =
         TextEditingController(text: producto['tipoDuracion']);
+    String duracion = _tipoDuracionController.text;
+
     final _medidaController = TextEditingController(text: producto['medida']);
+    String medida = _medidaController.text;
+
+    print(medida);
+
+    final _formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Editar Producto'),
-          content: Column(
-            children: [
-              TextField(
-                controller: _nombreController,
-                decoration: const InputDecoration(labelText: 'Nombre'),
+      builder: (BuildContext context) {
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Editar Producto'),
+            content: SingleChildScrollView(
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    TextFormField(
+                      controller: _nombreController,
+                      decoration: const InputDecoration(labelText: 'Nombre'),
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor ingrese un nombre';
+                        }
+                        return null;
+                      },
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: _medidaController.text,
+                      decoration: const InputDecoration(
+                        labelText: 'Unidad de medida',
+                      ),
+                      items: [
+                        'Unidades',
+                        'Gramos',
+                        'Kilogramos',
+                        'Litros',
+                        'Mililitros'
+                      ].map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          medida = newValue!;
+                        });
+                      },
+                    ),
+                    TextFormField(
+                      controller: _stockMinimoController,
+                      keyboardType: TextInputType.number,
+                      decoration:
+                          const InputDecoration(labelText: 'Stock Mínimo'),
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final stock = int.tryParse(value);
+                          if (stock == null || stock < 0) {
+                            return 'Valor inválido';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    TextFormField(
+                      controller: _duracionController,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(labelText: 'Duración'),
+                      validator: (value) {
+                        if (value != null && value.isNotEmpty) {
+                          final stock = int.tryParse(value);
+                          if (stock == null || stock < 0) {
+                            return 'Valor inválido';
+                          }
+                        }
+                        return null;
+                      },
+                    ),
+                    DropdownButtonFormField<String>(
+                      value: duracion,
+                      decoration: const InputDecoration(
+                        labelText: 'Tipo de duración',
+                      ),
+                      items: ['Días', 'Semanas', 'Meses', 'Años']
+                          .map<DropdownMenuItem<String>>((String value) {
+                        return DropdownMenuItem<String>(
+                          value: value,
+                          child: Text(value),
+                        );
+                      }).toList(),
+                      onChanged: (String? newValue) {
+                        setState(() {
+                          duracion = newValue!;
+                        });
+                      },
+                    ),
+                  ],
+                ),
               ),
-              TextField(
-                controller: _stockMinimoController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Stock Mínimo'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancelar'),
               ),
-              TextField(
-                controller: _duracionController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Duración'),
-              ),
-              TextField(
-                controller: _tipoDuracionController,
-                decoration: const InputDecoration(labelText: 'Tipo Duración'),
-              ),
-              TextField(
-                controller: _medidaController,
-                decoration: const InputDecoration(labelText: 'Medida'),
+              ElevatedButton(
+                onPressed: () async {
+                  if (_formKey.currentState!.validate()) {
+                    final nuevoNombre = _nombreController.text;
+                    final nuevoStockMinimo =
+                        int.parse(_stockMinimoController.text);
+                    final nuevaDuracion = int.parse(_duracionController.text);
+                    final nuevoTipoDuracion = duracion;
+                    final nuevaMedida = medida;
+
+                    await FirebaseFirestore.instance
+                        .collection('usuarios')
+                        .doc(widget.userId)
+                        .collection('despensas')
+                        .doc(widget.despensaId)
+                        .collection('productos')
+                        .doc(producto['id'])
+                        .update({
+                      'duracion': nuevaDuracion,
+                      'medida': nuevaMedida,
+                      'nombre': nuevoNombre,
+                      'stockMinimo': nuevoStockMinimo,
+                      'tipoDuracion': nuevoTipoDuracion,
+                    });
+
+                    Navigator.of(context).pop();
+                    _loadProductos();
+                  }
+                },
+                child: const Text('Guardar'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final nuevoNombre = _nombreController.text;
-                final nuevoStockMinimo = int.parse(_stockMinimoController.text);
-                final nuevaDuracion = int.parse(_duracionController.text);
-                final nuevoTipoDuracion = _tipoDuracionController.text;
-                final nuevaMedida = _medidaController.text;
-
-                await FirebaseFirestore.instance
-                    .collection('usuarios')
-                    .doc(widget.userId)
-                    .collection('despensas')
-                    .doc(widget.despensaId)
-                    .collection('productos')
-                    .doc(producto['id'])
-                    .update({
-                  'duracion': nuevaDuracion,
-                  'medida': nuevaMedida,
-                  'nombre': nuevoNombre,
-                  'stockMinimo': nuevoStockMinimo,
-                  'tipoDuracion': nuevoTipoDuracion,
-                });
-
-                Navigator.of(context).pop();
-                _loadProductos();
-              },
-              child: const Text('Guardar'),
-            ),
-          ],
-        );
+          );
+        });
       },
     );
   }
@@ -629,55 +712,83 @@ class _PantryViewState extends State<PantryView> {
           ),
         ),
       ),
-      body: Column(
-        children: [
-          Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            child: Container(
-              height: 40,
-              decoration: BoxDecoration(
-                color: const Color(0xFF5D83B1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: TextField(
-                controller: searchController,
-                decoration: const InputDecoration(
-                  hintText: 'Buscar producto',
-                  hintStyle: TextStyle(color: Colors.white),
-                  prefixIcon: Icon(Icons.search, color: Colors.white),
-                  border: InputBorder.none,
-                  contentPadding:
-                      EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      body: isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                color: Color(0xFF124580),
+              ), // Indicador de carga
+            )
+          : products.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No existen Productos',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF124580),
+                    ),
+                  ),
+                )
+              : Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
+                      child: TextField(
+                        controller: searchController,
+                        decoration: InputDecoration(
+                          hintText: "Buscar producto",
+                          hintStyle: TextStyle(color: Colors.white),
+                          prefixIcon:
+                              const Icon(Icons.search, color: Colors.white),
+                          filled: true,
+                          fillColor: const Color(0xFF5D83b1),
+                          contentPadding:
+                              const EdgeInsets.symmetric(vertical: 0.0),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(15.0),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        style: const TextStyle(color: Colors.white),
+                        textAlignVertical: TextAlignVertical.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: filteredProducts.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No hay coincidencias',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF124580),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: filteredProducts.length,
+                              itemBuilder: (context, index) {
+                                return ProductCard(
+                                  product: filteredProducts[index],
+                                  onDeleteProduct: (id) {
+                                    _eliminarProducto(id);
+                                    _loadProductos(); // Recargar después de eliminar
+                                  },
+                                  onEditProduct: _editarProducto,
+                                  onEditExpiration: _editarFechaVencimiento,
+                                  onAddUnits:
+                                      _agregarUnidadesProducto, // Pasar la función aquí
+                                  onUnitDeleted:
+                                      _loadProductos, // Recargar después de eliminar una unidad
+                                  userId: widget.userId,
+                                  despensaId: widget.despensaId,
+                                );
+                              },
+                            ),
+                    ),
+                  ],
                 ),
-                style: const TextStyle(color: Colors.white),
-                textAlignVertical: TextAlignVertical.center,
-              ),
-            ),
-          ),
-          Expanded(
-            child: ListView.builder(
-              itemCount: filteredProducts.length,
-              itemBuilder: (context, index) {
-                return ProductCard(
-                  product: filteredProducts[index],
-                  onDeleteProduct: (id) {
-                    _eliminarProducto(id);
-                    _loadProductos(); // Recargar después de eliminar
-                  },
-                  onEditProduct: _editarProducto,
-                  onEditExpiration: _editarFechaVencimiento,
-                  onAddUnits: _agregarUnidadesProducto, // Pasar la función aquí
-                  onUnitDeleted:
-                      _loadProductos, // Recargar después de eliminar una unidad
-                  userId: widget.userId,
-                  despensaId: widget.despensaId,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
       floatingActionButton: SpeedDial(
         icon: Icons.add,
         activeIcon: Icons.close,

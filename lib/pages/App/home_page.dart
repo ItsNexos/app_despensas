@@ -205,7 +205,7 @@ class _HomePageState extends State<HomePage> {
                     _buildMainButton(
                       icon: Icons.shopping_cart_outlined,
                       title: 'Voy de compras',
-                      subtitle: 'Ir a carrito de compras',
+                      subtitle: 'Revisa los productos que necesitas',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -221,7 +221,7 @@ class _HomePageState extends State<HomePage> {
                     _buildMainButton(
                       icon: Icons.restaurant_menu,
                       title: 'Quiero cocinar',
-                      subtitle: 'Ver recetas sugeridas',
+                      subtitle: 'Descubre recetas sugeridas',
                       onTap: () => Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -257,7 +257,9 @@ class _HomePageState extends State<HomePage> {
                             if (!snapshot.hasData) {
                               return const Padding(
                                 padding: EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(),
+                                child: CircularProgressIndicator(
+                                  color: Color(0xFF124580),
+                                ),
                               );
                             }
 
@@ -278,7 +280,8 @@ class _HomePageState extends State<HomePage> {
                                 child: DropdownButton<String>(
                                   value: selectedPantryId,
                                   isExpanded: true,
-                                  hint: const Text('Seleccione su despensa'),
+                                  hint: const Text(
+                                      'Seleccione la despensa a gestionar'),
                                   items: pantryList.map((pantry) {
                                     return DropdownMenuItem<String>(
                                       value: pantry['id'],
@@ -309,8 +312,8 @@ class _HomePageState extends State<HomePage> {
                     //Botones de acción
                     _buildMainButton(
                       icon: Icons.mic,
-                      title: 'Agregar productos',
-                      subtitle: 'Agrega productos por voz',
+                      title: 'Agregar productos por voz',
+                      subtitle: 'Dicta múltiples productos',
                       onTap: () {
                         if (selectedPantryId != null) {
                           Navigator.push(
@@ -336,7 +339,7 @@ class _HomePageState extends State<HomePage> {
                     _buildMainButton(
                       icon: Icons.format_list_bulleted,
                       title: 'Ver productos',
-                      subtitle: 'Ir a listado de productos',
+                      subtitle: 'Revisa o consulta tus productos',
                       onTap: () async {
                         if (selectedPantryId != null) {
                           String pantryName = await getSelectedPantryName();
@@ -524,7 +527,7 @@ class _HomePageState extends State<HomePage> {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: 12,
                       fontWeight: FontWeight.w500,
                       color: Color(0XFF4DAFFF),
                     ),
