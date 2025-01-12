@@ -72,10 +72,9 @@ class _HomePageState extends State<HomePage> {
             .toList());
   }
 
-// Método ajustado para evitar conflictos con la fase de construcción
+// Método para evitar conflictos con la fase de construcción
   void validateSelectionSafe(List<Map<String, dynamic>> pantries) {
     if (pantries.isEmpty) {
-      // Si no hay despensas, resetear la selección
       if (selectedPantryId != null) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           setState(() {
@@ -88,7 +87,6 @@ class _HomePageState extends State<HomePage> {
 
     // Verificar si el ID seleccionado existe en la lista actual
     bool idExists = pantries.any((p) => p['id'] == selectedPantryId);
-
     if (!idExists) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         setState(() {

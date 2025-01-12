@@ -35,7 +35,7 @@ class _VoicePageState extends State<VoicePage> {
   void _startListening() async {
     await _speechToText.listen(
       onResult: _onSpeechResult,
-      localeId: 'es_ES', // Cambia esto si quieres otro dialecto
+      localeId: 'es_ES', //reconocimento de voz en español
     );
     setState(() {});
   }
@@ -58,10 +58,7 @@ class _VoicePageState extends State<VoicePage> {
   }
 
   String formatProductName(String productName) {
-    return productName
-        .split(' ') // Divide el nombre en palabras
-        .map((word) => capitalize(word)) // Capitaliza cada palabra
-        .join(' '); // Une las palabras de nuevo con espacios
+    return productName.split(' ').map((word) => capitalize(word)).join(' ');
   }
 
   void _filterSpokenWords(String words) {
@@ -78,8 +75,8 @@ class _VoicePageState extends State<VoicePage> {
         if (currentProduct.isNotEmpty) {
           filteredProducts.add({
             'quantity': currentQuantity,
-            'product':
-                capitalize(currentProduct.trim()), // Capitalizar primera letra
+            'product': capitalize(currentProduct
+                .trim()), // Capitalizar primera letra (poner en mayusculas)
             'date': DateTime.now().toString(),
             'expiryDate': ""
           });
@@ -94,8 +91,7 @@ class _VoicePageState extends State<VoicePage> {
     if (currentProduct.isNotEmpty && currentQuantity != null) {
       filteredProducts.add({
         'quantity': currentQuantity,
-        'product':
-            capitalize(currentProduct.trim()), // Capitalizar primera letra
+        'product': capitalize(currentProduct.trim()),
         'date': DateTime.now().toString(),
         'expiryDate': ""
       });
@@ -110,7 +106,7 @@ class _VoicePageState extends State<VoicePage> {
     try {
       return int.parse(word);
     } catch (e) {
-      return palabrasANumeroExtendido(word); // Soporte para números en texto
+      return palabrasANumeroExtendido(word); // metodo para números en texto
     }
   }
 
@@ -146,41 +142,44 @@ class _VoicePageState extends State<VoicePage> {
   }
 
   void _agregarProductosADespensa() async {
-    // Referencia a la colección 'despensas' y al documento con la ID de la despensa
+    if (_products.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No hay productos para añadir a la despensa.'),
+        ),
+      );
+      return;
+    }
+
     CollectionReference despensasRef = FirebaseFirestore.instance
         .collection('usuarios')
         .doc(user!.uid)
         .collection('despensas');
 
     try {
-      // Recorremos cada producto en la lista _products
       for (var product in _products) {
         int cantidad = product['quantity'];
         String nombre = product['product'];
 
-        // Referencia al documento del producto en la colección 'productos'
         DocumentReference productoDocRef = despensasRef
             .doc(widget.despensaId)
             .collection('productos')
             .doc(nombre);
 
-        // Verificamos si el producto ya existe y obtenemos el valor de stockMinimo si es el caso
-        int stockMinimo = 0; // Valor predeterminado
+        int stockMinimo = 0;
         DocumentSnapshot productoSnapshot = await productoDocRef.get();
         if (productoSnapshot.exists) {
           stockMinimo = productoSnapshot.get('stockMinimo') ?? 0;
         }
 
-        // Establecemos el documento del producto en la colección 'productos'
         await productoDocRef.set({
           'nombre': nombre,
           'stockMinimo': stockMinimo,
-          'duracion': 0,
+          'duracion': '',
           'tipoDuracion': '',
           'medida': 'Unidades'
         });
 
-        // Añadimos la cantidad como unidades individuales en 'unidades_productos'
         for (int i = 0; i < cantidad; i++) {
           await productoDocRef.collection('unidades_productos').add({
             'fechaIngreso': DateFormat('dd/MM/yyyy').format(DateTime.now()),
@@ -188,7 +187,6 @@ class _VoicePageState extends State<VoicePage> {
           });
         }
 
-        // Agregar a 'lista_productos' de 'usuarios' con nombre único
         await FirebaseFirestore.instance
             .collection('usuarios')
             .doc(user!.uid)
@@ -197,12 +195,15 @@ class _VoicePageState extends State<VoicePage> {
             .set({'nombre': nombre}, SetOptions(merge: true));
       }
 
-      // Confirmación en consola y feedback visual
+      setState(() {
+        _products.clear();
+      });
+
       print('Productos añadidos a la despensa con ID: ${widget.despensaId}');
-      print(_products);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Productos añadidos a la despensa exitosamente')),
+          content: Text('Productos añadidos a la despensa exitosamente'),
+        ),
       );
     } catch (e) {
       print('Error al agregar productos: $e');
@@ -218,66 +219,36 @@ class _VoicePageState extends State<VoicePage> {
       builder: (context) {
         String nombre = _products[index]['product'];
         int cantidad = _products[index]['quantity'];
-        final _formKey = GlobalKey<FormState>();
         return AlertDialog(
-          title: const Text('Editar producto'),
-          content: SingleChildScrollView(
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: TextEditingController(text: nombre),
-                    onChanged: (value) {
-                      nombre = value;
-                    },
-                    textCapitalization: TextCapitalization.sentences,
-                    decoration:
-                        InputDecoration(labelText: 'Nombre del producto'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese un nombre';
-                      }
-                      return null;
-                    },
-                  ),
-                  TextFormField(
-                    controller:
-                        TextEditingController(text: cantidad.toString()),
-                    keyboardType: TextInputType.number,
-                    onChanged: (value) {
-                      cantidad = int.tryParse(value) ?? 0;
-                    },
-                    decoration: InputDecoration(labelText: 'Cantidad'),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor ingrese una cantidad';
-                      }
-                      final cantidad = int.tryParse(value);
-                      if (cantidad == null) {
-                        return 'Por favor ingrese un número válido';
-                      }
-                      if (cantidad <= 0) {
-                        return 'La cantidad debe ser mayor a 0';
-                      }
-                      return null;
-                    },
-                  )
-                ],
+          title: Text('Agregar por voz'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: TextEditingController(text: nombre),
+                onChanged: (value) {
+                  nombre = value;
+                },
+                decoration: InputDecoration(labelText: 'Nombre del producto'),
               ),
-            ),
+              TextField(
+                controller: TextEditingController(text: cantidad.toString()),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  cantidad = int.tryParse(value) ?? 0;
+                },
+                decoration: InputDecoration(labelText: 'Cantidad'),
+              )
+            ],
           ),
           actions: [
             TextButton(
               onPressed: () {
-                if (_formKey.currentState!.validate()) {
-                  setState(() {
-                    _products[index]['product'] = formatProductName(nombre);
-                    _products[index]['quantity'] = cantidad;
-                  });
-                  Navigator.pop(context);
-                }
+                setState(() {
+                  _products[index]['product'] = formatProductName(nombre);
+                  _products[index]['quantity'] = cantidad;
+                });
+                Navigator.pop(context);
               },
               child: Text('Guardar'),
             ),
@@ -310,7 +281,7 @@ class _VoicePageState extends State<VoicePage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Dictar productos',
+          'Agregar por voz',
           style: TextStyle(
             color: Color(0xFF124580),
             fontWeight: FontWeight.bold,
@@ -322,13 +293,34 @@ class _VoicePageState extends State<VoicePage> {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            child: Text(
-              _speechToText.isListening
-                  ? "Escuchando..."
-                  : _speechEnabled
-                      ? "Presiona el botón para comenzar a hablar..."
-                      : "Reconocimiento de voz no disponible",
-              style: const TextStyle(fontSize: 20.0),
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start, // Alinea todo a la izquierda
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(1.0),
+                  child: Text(
+                    _speechToText.isListening
+                        ? "Escuchando..." // Mensaje dinámico
+                        : _speechEnabled
+                            ? "Presiona el botón para comenzar a hablar..."
+                            : "Reconocimiento de voz no disponible",
+                    style: const TextStyle(fontSize: 20.0),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(
+                      left: 1.0), // Margen fijo a la izquierda
+                  child: const Text(
+                    "Listado de productos",
+                    style: TextStyle(
+                      fontSize: 22.0,
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Expanded(
@@ -392,13 +384,14 @@ class _VoicePageState extends State<VoicePage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        backgroundColor: const Color(0xFF2C5B92),
+        backgroundColor:
+            _speechToText.isNotListening ? Colors.red : Colors.green,
         foregroundColor: Colors.white,
         onPressed:
             _speechToText.isNotListening ? _startListening : _stopListening,
         tooltip: 'Escuchar',
         child: Icon(
-          _speechToText.isNotListening ? Icons.mic : Icons.mic_off,
+          _speechToText.isNotListening ? Icons.mic_off : Icons.mic,
         ),
       ),
     );

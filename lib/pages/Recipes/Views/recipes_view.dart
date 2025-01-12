@@ -6,13 +6,13 @@ import 'package:flutter/material.dart';
 class RecipeViewPage extends StatefulWidget {
   final String recipeId;
   final User user;
-  final bool isPublic; // Indica si la receta es pública o pertenece al usuario
+  final bool isPublic;
 
   const RecipeViewPage({
     Key? key,
     required this.recipeId,
     required this.user,
-    this.isPublic = false, // Por defecto, no es pública
+    this.isPublic = false,
   }) : super(key: key);
 
   @override
@@ -42,17 +42,17 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
       final productosSnapshot =
           await despensa.reference.collection('productos').get();
       for (var producto in productosSnapshot.docs) {
-        userProductsMap[producto['nombre']] = true; // Producto disponible
+        userProductsMap[producto['nombre']] = true;
       }
     }
 
     // Cargar receta y sus ingredientes
     final recipeCollection = widget.isPublic
-        ? FirebaseFirestore.instance.collection('recetas') // Recetas públicas
+        ? FirebaseFirestore.instance.collection('recetas')
         : FirebaseFirestore.instance
             .collection('usuarios')
             .doc(widget.user.uid)
-            .collection('recetas'); // Recetas del usuario
+            .collection('recetas');
 
     final recipeDoc = await recipeCollection.doc(widget.recipeId).get();
     final ingredientesSnapshot =
@@ -79,7 +79,7 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
       builder: (context) {
         return PrepareRecipeModal(
           ingredients: ingredients,
-          user: widget.user, // Pasamos el user al modal
+          user: widget.user,
         );
       },
     );
@@ -138,7 +138,6 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sección de datos principales (tiempo y porciones)
               Container(
                 decoration: BoxDecoration(
                   color: Colors.white,
@@ -301,17 +300,17 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
 
               // Sección de preparación
               Container(
-                width: double.infinity, // Ocupa todo el ancho disponible
+                width: double.infinity,
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: Colors.white, // Color de fondo
-                  borderRadius: BorderRadius.circular(16), // Bordes redondeados
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.grey.withOpacity(0.1),
                       spreadRadius: 4,
                       blurRadius: 6,
-                      offset: const Offset(0, 3), // Sombras sutiles
+                      offset: const Offset(0, 3),
                     ),
                   ],
                 ),
@@ -379,7 +378,7 @@ class _RecipeViewPageState extends State<RecipeViewPage> {
 
 class PrepareRecipeModal extends StatefulWidget {
   final List<Map<String, dynamic>> ingredients;
-  final User user; // Recibe el user como parámetro
+  final User user;
 
   const PrepareRecipeModal(
       {Key? key, required this.ingredients, required this.user})
@@ -390,12 +389,10 @@ class PrepareRecipeModal extends StatefulWidget {
 }
 
 class _PrepareRecipeModalState extends State<PrepareRecipeModal> {
-  Map<String, int> userProductQuantities =
-      {}; // Cantidades de productos del usuario
-  Map<String, int> requiredQuantities =
-      {}; // Cantidades requeridas para cada ingrediente
-  bool isLoading = true; // Estado de carga inicial
-  bool isUsingProducts = false; // Estado de uso de productos
+  Map<String, int> userProductQuantities = {};
+  Map<String, int> requiredQuantities = {};
+  bool isLoading = true;
+  bool isUsingProducts = false;
 
   @override
   void initState() {
@@ -442,14 +439,14 @@ class _PrepareRecipeModalState extends State<PrepareRecipeModal> {
             requiredQuantities.remove(ingredientName);
           }
         }
-        isLoading = false; // Termina la carga inicial
+        isLoading = false;
       });
     }
   }
 
   Future<void> _useProducts() async {
     setState(() {
-      isUsingProducts = true; // Inicia el estado de uso de productos
+      isUsingProducts = true;
     });
 
     final despensasRef = FirebaseFirestore.instance
@@ -485,7 +482,7 @@ class _PrepareRecipeModalState extends State<PrepareRecipeModal> {
     }
 
     setState(() {
-      isUsingProducts = false; // Termina el estado de uso de productos
+      isUsingProducts = false;
     });
 
     Navigator.pop(context);

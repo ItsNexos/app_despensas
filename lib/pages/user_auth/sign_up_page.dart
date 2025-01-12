@@ -168,7 +168,6 @@ class _SignUpPageState extends State<SignUpPage> {
       backgroundColor: Color(0xFF124580),
       body: Stack(
         children: [
-          // Sección azul
           Positioned(
             top: 0,
             left: 0,
@@ -290,8 +289,6 @@ class _SignUpPageState extends State<SignUpPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Separador con "o"
                     Row(
                       children: [
                         Expanded(
@@ -369,27 +366,24 @@ class _SignUpPageState extends State<SignUpPage> {
         prefixIcon: Icon(icon, color: Color(0xFFA3B3B9)),
         hintText: hintText,
         errorText: error,
-        // Ajuste de padding para centrar verticalmente el contenido
         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-        // Estilo para el hintText
         hintStyle: TextStyle(
-          color: Color(0xFFA3B3B9), // Color por defecto del hintText
+          color: Color(0xFFA3B3B9),
         ),
-
         enabledBorder: UnderlineInputBorder(
           borderSide: BorderSide(
             color: error != null
-                ? Color(0xFFE4352A).withOpacity(0.8) // Color de error
-                : Color(0xFFA3B3B9), // Color normal
+                ? Color(0xFFE4352A).withOpacity(0.8)
+                : Color(0xFFA3B3B9),
           ),
         ),
         focusedBorder: UnderlineInputBorder(
           borderSide: BorderSide(
             color: error != null
-                ? Color(0xFFE4352A).withOpacity(0.8) // Color de error
-                : Color(0xFF6DBDFF), // Color al enfocarse
+                ? Color(0xFFE4352A).withOpacity(0.8)
+                : Color(0xFF6DBDFF),
           ),
-         ),
+        ),
       ),
     );
   }
@@ -408,28 +402,24 @@ class _SignUpPageState extends State<SignUpPage> {
       decoration: InputDecoration(
         hintText: hintText,
         errorText: error,
-        // Ajuste de padding para centrar verticalmente el contenido
         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-        // Estilo para el hintText
         hintStyle: TextStyle(
-          color: Color(0xFFA3B3B9), // Color por defecto del hintText
+          color: Color(0xFFA3B3B9),
         ),
-
         enabledBorder: UnderlineInputBorder(
           borderSide: BorderSide(
             color: error != null
-                ? Color(0xFFE4352A).withOpacity(0.8) // Color de error
-                : Color(0xFFA3B3B9), // Color normal
+                ? Color(0xFFE4352A).withOpacity(0.8)
+                : Color(0xFFA3B3B9),
           ),
         ),
         focusedBorder: UnderlineInputBorder(
           borderSide: BorderSide(
             color: error != null
-                ? Color(0xFFE4352A).withOpacity(0.8) // Color de error
-                : Color(0xFF6DBDFF), // Color al enfocarse
+                ? Color(0xFFE4352A).withOpacity(0.8)
+                : Color(0xFF6DBDFF),
           ),
         ),
-
         prefixIcon: Icon(Icons.lock, color: Color(0xFFA3B3B9)),
         suffixIcon: IconButton(
           icon: Icon(

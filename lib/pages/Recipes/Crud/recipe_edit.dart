@@ -28,9 +28,8 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
   TextEditingController _titleController = TextEditingController();
   TextEditingController _preparationController = TextEditingController();
   List<String> selectedCategories = [];
-  bool updateForOthers = false; // Definimos la variable
+  bool updateForOthers = false;
 
-  // Definición de categorías
   final List<String> categories = [
     'Entrada',
     'Plato de fondo',
@@ -130,7 +129,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
         'categorias': selectedCategories,
         'porciones': int.tryParse(_servingsController.text) ?? 1,
         'tiempoEstimado': int.tryParse(_estimatedTimeController.text) ?? 0,
-        'autor': _userName, // Actualizar el autor
+        'autor': _userName,
       };
 
       // Actualizar receta del usuario
@@ -154,7 +153,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
         await recipeRef.collection('ingredientes').add(ingredient);
       }
 
-      // Si se solicita, actualizar también en la colección pública
+      // actualizar también en la colección pública
       if (updateForOthers) {
         final publicRecipeRef = FirebaseFirestore.instance
             .collection('recetas')
@@ -364,9 +363,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        const SizedBox(
-                            width: 30), // Espaciado entre el texto y el campo
-
+                        const SizedBox(width: 30),
                         SizedBox(
                             width: 100, // Ancho fijo del cuadro
                             height: 48,
@@ -387,7 +384,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                   borderSide: BorderSide(
                                     color: _hasError
                                         ? Colors.red
-                                        : Color(0xFF124580), // Borde dinámico
+                                        : Color(0xFF124580),
                                     width: 1.0,
                                   ),
                                 ),
@@ -396,7 +393,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                   borderSide: BorderSide(
                                     color: _hasError
                                         ? Colors.red
-                                        : Color(0xFF51A5EA), // Borde dinámico
+                                        : Color(0xFF51A5EA),
                                     width: 1.0,
                                   ),
                                 ),
@@ -405,8 +402,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                   borderSide: BorderSide(
                                     color: _hasError
                                         ? Colors.red
-                                        : Color(0xFF124580)
-                                            .withOpacity(0.2), // Borde dinámico
+                                        : Color(0xFF124580).withOpacity(0.2),
                                     width: 1.0,
                                   ),
                                 ),
@@ -433,7 +429,6 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                             ),
                           ],
                         ),
-                        // Lista de ingredientes existente
                         ListView.builder(
                           shrinkWrap: true,
                           physics: NeverScrollableScrollPhysics(),
@@ -519,8 +514,7 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                     hintStyle: TextStyle(
                                       color: Color(0xFF606368),
                                       fontWeight: FontWeight.w500,
-                                      fontSize:
-                                          15, // Color por defecto del hintText
+                                      fontSize: 15,
                                     ),
                                   ),
                                 ),
@@ -598,14 +592,11 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                                     _isMainIngredient = value ?? false;
                                   });
                                 },
-                                activeColor: Color(
-                                    0xFF51A5EA), // Color del check cuando está activo
-                                checkColor:
-                                    Colors.white, // Color del ícono check
+                                activeColor: Color(0xFF51A5EA),
+                                checkColor: Colors.white,
                                 side: BorderSide(
-                                  color: Color(
-                                      0xFF606368), // Color de la línea cuando no está activo
-                                  width: 1.5, // Grosor de la línea
+                                  color: Color(0xFF606368),
+                                  width: 1.5,
                                 ),
                               ),
                             ],
@@ -747,14 +738,10 @@ class _RecipeEditPageState extends State<RecipeEditPage> {
                               updateForOthers = value;
                             });
                           },
-                          activeColor: Color(
-                              0xFF2C5B92), // Color del botón cuando está activado
-                          activeTrackColor: Color(
-                              0xFFB3E5FC), // Color de la pista cuando está activado
-                          inactiveThumbColor: Color(
-                              0xFF4C525A), // Color del botón cuando está desactivado
-                          inactiveTrackColor: Color(
-                              0xFFF4F6F8), // Color de la pista cuando está desactivado
+                          activeColor: Color(0xFF2C5B92),
+                          activeTrackColor: Color(0xFFB3E5FC),
+                          inactiveThumbColor: Color(0xFF4C525A),
+                          inactiveTrackColor: Color(0xFFF4F6F8),
                         ),
                       ],
                     ),

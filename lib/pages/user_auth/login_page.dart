@@ -2,7 +2,6 @@ import 'package:app_despensas/pages/App/home_page.dart';
 import 'package:app_despensas/pages/user_auth/forgot_password.dart';
 import 'package:app_despensas/pages/user_auth/sign_up_page.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -10,14 +9,13 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
-  bool _isPasswordVisible = false; // Control de visibilidad de la contraseña
-  bool _emailError = false; // Estado del error del email
-  bool _passwordError = false; // Estado del error de contraseña
-  String? _emailErrorMessage; // Mensaje de error para el email
+  bool _isPasswordVisible = false;
+  bool _emailError = false;
+  bool _passwordError = false;
+  String? _emailErrorMessage;
 
   @override
   void dispose() {
@@ -46,13 +44,7 @@ class _LoginPageState extends State<LoginPage> {
     if (_emailError || _passwordError) return; // No continuar si hay errores
 
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      if (!mounted)
-        return; // Verificación para evitar uso de context si el widget fue desmontado
+      if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (context) => HomePage()),
@@ -101,17 +93,16 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF124580), // Fondo azul
+      backgroundColor: Color(0xFF124580),
       body: Stack(
         children: [
-          // Parte azul con el título y la instrucción
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: MediaQuery.of(context).size.height * 0.35,
             child: Container(
-              color: Color(0xFF124580), // Fondo azul
+              color: Color(0xFF124580),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -138,8 +129,6 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
           ),
-
-          // Contenedor Blanco
           Positioned(
             top: MediaQuery.of(context).size.height * 0.30,
             child: Container(
@@ -167,17 +156,10 @@ class _LoginPageState extends State<LoginPage> {
                         prefixIcon: Icon(Icons.email, color: Color(0xFFA3B3B9)),
                         hintText: "Correo electrónico",
                         errorText: _emailError ? _emailErrorMessage : null,
-
-                        // Ajuste de padding para centrar verticalmente el contenido
                         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-
-                        // Estilo para el hintText
                         hintStyle: TextStyle(
-                          color: Color(
-                              0xFFA3B3B9), // Color por defecto del hintText
+                          color: Color(0xFFA3B3B9),
                         ),
-
-                        // Color campo erroneo o correcto
                         enabledBorder: UnderlineInputBorder(
                           borderSide: BorderSide(
                             color: _emailError
@@ -204,15 +186,10 @@ class _LoginPageState extends State<LoginPage> {
                       decoration: InputDecoration(
                         prefixIcon: Icon(Icons.lock, color: Color(0xFFA3B3B9)),
                         hintText: "Contraseña",
-                        // Ajuste de padding para centrar verticalmente el contenido
                         contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-
-                        // Estilo para el hintText
                         hintStyle: TextStyle(
-                          color: Color(
-                              0xFFA3B3B9), // Color por defecto del hintText
+                          color: Color(0xFFA3B3B9),
                         ),
-
                         errorText: _passwordError
                             ? 'Por favor ingrese su contraseña'
                             : null,
@@ -291,8 +268,6 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // Separador con "o"
                     Row(
                       children: [
                         Expanded(
@@ -332,11 +307,10 @@ class _LoginPageState extends State<LoginPage> {
                       },
                       style: OutlinedButton.styleFrom(
                         side: BorderSide(color: Color(0xFF124580)),
-                        minimumSize: Size(321, 48), // Largo adaptable
+                        minimumSize: Size(321, 48),
                         padding: const EdgeInsets.symmetric(vertical: 16.0),
                         shape: RoundedRectangleBorder(
-                          borderRadius:
-                              BorderRadius.circular(15), // Borde radius de 10px
+                          borderRadius: BorderRadius.circular(15),
                         ),
                       ),
                       child: Text(

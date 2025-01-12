@@ -14,7 +14,7 @@ class _ExploreRecipesState extends State<ExploreRecipes> {
   final User? user = FirebaseAuth.instance.currentUser;
   List<Map<String, dynamic>> allRecipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
-  String selectedFilter = "Usuarios"; // Radiobutton default
+  String selectedFilter = "Usuarios";
   List<String> selectedCategories = [];
   String searchQuery = "";
 
@@ -165,7 +165,7 @@ class _ExploreRecipesState extends State<ExploreRecipes> {
       'Vegetariano',
       'Carnes',
       'Vegano'
-    ]; // Ejemplo de categorías
+    ];
 
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
@@ -272,8 +272,7 @@ class _ExploreRecipesState extends State<ExploreRecipes> {
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),
       body: Column(
-        crossAxisAlignment:
-            CrossAxisAlignment.start, // Asegura alineación a la izquierda
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSearchBar(),
           const SizedBox(height: 8),

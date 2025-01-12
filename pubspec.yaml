@@ -54,6 +54,8 @@ dependencies:
   diacritic: ^0.1.6
   string_similarity: ^2.1.1
   flutter_launcher_icons: ^0.14.1
+  flutter_local_notifications: ^18.0.1
+  workmanager: ^0.5.2
 
 dev_dependencies:
   flutter_test:

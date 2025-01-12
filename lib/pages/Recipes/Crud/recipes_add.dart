@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class RecipeAddPage extends StatefulWidget {
   final String user;
@@ -29,7 +28,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
   String _ingredientUnit = 'unidades';
   String _userName = '';
 
-  List<String> userProducts = []; // Lista de productos del usuario
+  List<String> userProducts = [];
   List<String> filteredSuggestions = [];
 
   @override
@@ -69,11 +68,10 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
     }
 
     setState(() {
-      userProducts = loadedProducts.toSet().toList(); // Evitar duplicados
+      userProducts = loadedProducts.toSet().toList();
     });
   }
 
-  // Filtra las sugerencias de acuerdo con lo que el usuario escribe
   void _filterSuggestions(String query) {
     setState(() {
       filteredSuggestions = userProducts
@@ -97,14 +95,13 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
           'nombre': ingredientName,
           'cantidad': int.parse(_ingredientQuantityController.text),
           'medida': _ingredientUnit,
-          'principal': _isMainIngredient, // Añadir atributo principal
+          'principal': _isMainIngredient,
         });
 
-        // Limpiar campos después de añadir
         _ingredientNameController.clear();
         _ingredientQuantityController.clear();
         _ingredientUnit = 'unidades';
-        _isMainIngredient = false; // Resetear el checkbox
+        _isMainIngredient = false;
       });
     }
   }
@@ -122,9 +119,8 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
         'preparacion': _preparationController.text,
         'categorias': selectedCategories,
         'tiempoEstimado': int.tryParse(_estimatedTimeController.text) ?? 0,
-        'porciones':
-            int.tryParse(_servingsController.text) ?? 1, // Agregar porciones
-        'autor': _userName, // Agregar el nombre del autor
+        'porciones': int.tryParse(_servingsController.text) ?? 1,
+        'autor': _userName,
       };
 
       final recipeRef = await FirebaseFirestore.instance
@@ -137,7 +133,6 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
         await recipeRef.collection('ingredientes').add(ingredient);
       }
 
-      // Si la casilla de "Publicar receta para otros usuarios" está marcada, guardamos la receta en la colección pública
       if (_publishForOthers) {
         final publicRecipeRef =
             FirebaseFirestore.instance.collection('recetas').doc(recipeRef.id);
@@ -212,13 +207,11 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                       Row(
                         children: [
                           Icon(
-                            Icons.edit, // El ícono que quieras usar
-                            color:
-                                Color(0xFF51A5EA), // Mismo color que el texto
-                            size: 20, // Tamaño del ícono
+                            Icons.edit,
+                            color: Color(0xFF51A5EA),
+                            size: 20,
                           ),
-                          SizedBox(
-                              width: 8), // Espaciado entre el ícono y el texto
+                          SizedBox(width: 8),
                           Text(
                             "Nombre de la receta",
                             style: TextStyle(
@@ -233,13 +226,11 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                         controller: _titleController,
                         decoration: const InputDecoration(
                           hintText: "Agregar nombre",
-                          // Estilo para el hintText
                           hintStyle: TextStyle(
                             color: Color(0xFF606368),
                             fontWeight: FontWeight.w500,
-                            fontSize: 15, // Color por defecto del hintText
+                            fontSize: 15,
                           ),
-
                           border: UnderlineInputBorder(),
                         ),
                         validator: (value) {
@@ -344,13 +335,10 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                               fontWeight: FontWeight.w600,
                             ),
                           ),
-                          const SizedBox(
-                              width: 30), // Espaciado entre el texto y el campo
-
+                          const SizedBox(width: 30),
                           SizedBox(
-                              width: 100, // Ancho fijo del cuadro
+                              width: 100,
                               height: 48,
-                              // Altura fija del cuadro
                               child: TextFormField(
                                 controller: _estimatedTimeController,
                                 textAlign: TextAlign.center,
@@ -367,7 +355,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                     borderSide: BorderSide(
                                       color: _hasError
                                           ? Colors.red
-                                          : Color(0xFF124580), // Borde dinámico
+                                          : Color(0xFF124580),
                                       width: 1.0,
                                     ),
                                   ),
@@ -376,7 +364,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                     borderSide: BorderSide(
                                       color: _hasError
                                           ? Colors.red
-                                          : Color(0xFF51A5EA), // Borde dinámico
+                                          : Color(0xFF51A5EA),
                                       width: 1.0,
                                     ),
                                   ),
@@ -385,8 +373,7 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                     borderSide: BorderSide(
                                       color: _hasError
                                           ? Colors.red
-                                          : Color(0xFF124580).withOpacity(
-                                              0.2), // Borde dinámico
+                                          : Color(0xFF124580).withOpacity(0.2),
                                       width: 1.0,
                                     ),
                                   ),
@@ -470,17 +457,13 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                 hintStyle: TextStyle(
                                   color: Color(0xFF606368),
                                   fontWeight: FontWeight.w500,
-                                  fontSize:
-                                      15, // Color por defecto del hintText
+                                  fontSize: 15,
                                 ),
                               ),
-
-                              onChanged:
-                                  _filterSuggestions, // Llama al método de filtrado
+                              onChanged: _filterSuggestions,
                               onTapOutside: (value) {
                                 setState(() {
-                                  filteredSuggestions
-                                      .clear(); // Limpia las sugerencias al enviar
+                                  filteredSuggestions.clear();
                                 });
                               },
                             ),
@@ -497,15 +480,13 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                     setState(() {
                                       _ingredientNameController.text =
                                           suggestion;
-                                      filteredSuggestions
-                                          .clear(); // Limpia las sugerencias al seleccionar
+                                      filteredSuggestions.clear();
                                     });
                                   },
                                 );
                               },
                             ),
                           const SizedBox(height: 16),
-                          // Fila de cantidad y unidades
                           Row(
                             children: [
                               Expanded(
@@ -525,12 +506,10 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                     decoration: InputDecoration(
                                       hintText: "Cantidad",
                                       border: InputBorder.none,
-                                      // Estilo para el hintText
                                       hintStyle: TextStyle(
                                         color: Color(0xFF606368),
                                         fontWeight: FontWeight.w500,
-                                        fontSize:
-                                            15, // Color por defecto del hintText
+                                        fontSize: 15,
                                       ),
                                     ),
                                   ),
@@ -608,14 +587,11 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                       _isMainIngredient = value ?? false;
                                     });
                                   },
-                                  activeColor: Color(
-                                      0xFF51A5EA), // Color del check cuando está activo
-                                  checkColor:
-                                      Colors.white, // Color del ícono check
+                                  activeColor: Color(0xFF51A5EA),
+                                  checkColor: Colors.white,
                                   side: BorderSide(
-                                    color: Color(
-                                        0xFF606368), // Color de la línea cuando no está activo
-                                    width: 1.5, // Grosor de la línea
+                                    color: Color(0xFF606368),
+                                    width: 1.5,
                                   ),
                                 ),
                               ],
@@ -673,31 +649,27 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                           hintStyle: TextStyle(
                             color: Color(0xFF606368),
                             fontWeight: FontWeight.w500,
-                            fontSize: 15, // Color del hintText
+                            fontSize: 15,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: Color(0xFF124580).withOpacity(
-                                  0.2), // Color de la línea predeterminada
+                              color: Color(0xFF124580).withOpacity(0.2),
                               width: 1.0,
                             ),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: Color(
-                                  0xFF51A5EA), // Color de la línea cuando está enfocado
-                              width: 1.0, // Grosor del borde al enfocarse
+                              color: Color(0xFF51A5EA),
+                              width: 1.0,
                             ),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(8),
                             borderSide: BorderSide(
-                              color: Color(0xFF124580).withOpacity(
-                                  0.2), // Color de la línea cuando está habilitado
-                              width:
-                                  1.0, // Grosor del borde cuando no está enfocado
+                              color: Color(0xFF124580).withOpacity(0.2),
+                              width: 1.0,
                             ),
                           ),
                         ),
@@ -780,14 +752,10 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                                 _publishForOthers = value;
                               });
                             },
-                            activeColor: Color(
-                                0xFF2C5B92), // Color del botón cuando está activado
-                            activeTrackColor: Color(
-                                0xFFB3E5FC), // Color de la pista cuando está activado
-                            inactiveThumbColor: Color(
-                                0xFF4C525A), // Color del botón cuando está desactivado
-                            inactiveTrackColor: Color(
-                                0xFFF4F6F8), // Color de la pista cuando está desactivado
+                            activeColor: Color(0xFF2C5B92),
+                            activeTrackColor: Color(0xFFB3E5FC),
+                            inactiveThumbColor: Color(0xFF4C525A),
+                            inactiveTrackColor: Color(0xFFF4F6F8),
                           ),
                         ],
                       ),
@@ -799,20 +767,18 @@ class _RecipeAddPageState extends State<RecipeAddPage> {
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(15),
                           ),
-                          minimumSize: const Size(
-                              double.infinity, 48), // Mínimo ancho infinito
+                          minimumSize: const Size(double.infinity, 48),
                         ),
                         onPressed: _saveRecipe,
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment
-                              .center, // Centra el contenido del botón
+                          mainAxisAlignment: MainAxisAlignment.center,
                           children: const [
                             Icon(
                               Icons.add,
                               color: Colors.white,
-                              size: 20, // Tamaño del ícono
+                              size: 20,
                             ),
-                            SizedBox(width: 8), // Espaciado entre ícono y texto
+                            SizedBox(width: 8),
                             Text(
                               "Añadir receta",
                               style: TextStyle(
