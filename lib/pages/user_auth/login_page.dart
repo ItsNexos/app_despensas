@@ -1,6 +1,7 @@
 import 'package:app_despensas/pages/App/home_page.dart';
 import 'package:app_despensas/pages/user_auth/forgot_password.dart';
 import 'package:app_despensas/pages/user_auth/sign_up_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class LoginPage extends StatefulWidget {
@@ -9,6 +10,7 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
@@ -44,6 +46,10 @@ class _LoginPageState extends State<LoginPage> {
     if (_emailError || _passwordError) return; // No continuar si hay errores
 
     try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
       if (!mounted) return;
 
       Navigator.of(context).pushAndRemoveUntil(

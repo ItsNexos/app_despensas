@@ -24,7 +24,6 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'App Despensas',
-
       theme: ThemeData(
         textTheme: GoogleFonts.poppinsTextTheme(
           Theme.of(context).textTheme,
@@ -39,8 +38,7 @@ class MyApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey[100],
         primaryColor: Color(0xFF124580),
       ),
-
-      home: SplashScreen(), // Usa la SplashScreen como pantalla inicial
+      home: SplashScreen(),
     );
   }
 }
