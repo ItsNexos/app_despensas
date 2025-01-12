@@ -32,7 +32,7 @@ class _ProductCardState extends State<ProductCard> {
   bool isExpanded = false;
 
   Color _getExpirationColor(String? expirationDate) {
-    // Si no hay fecha de vencimiento, retornar gris
+    // Si no hay fecha de vencimiento retorna gris
     if (expirationDate == null || expirationDate.isEmpty) {
       return Colors.grey[100]!;
     }
@@ -51,7 +51,7 @@ class _ProductCardState extends State<ProductCard> {
   }
 
   Future<void> _deleteUnit(String unitId, BuildContext context) async {
-    // Verificamos primero si es la última unidad
+    // Verificar primero si es la última unidad
     final unidadesSnapshot = await FirebaseFirestore.instance
         .collection('usuarios')
         .doc(widget.userId)
@@ -63,7 +63,7 @@ class _ProductCardState extends State<ProductCard> {
         .get();
 
     if (unidadesSnapshot.docs.length == 1) {
-      // Es la última unidad, mostrar confirmación
+      // Es la última unidad mostrar confirmación
       final confirmar = await showDialog<bool>(
         context: context,
         builder: (BuildContext context) {
@@ -146,6 +146,7 @@ class _ProductCardState extends State<ProductCard> {
             title: Text(
               widget.product['nombre'],
               style: const TextStyle(
+                color: Color(0xFF3A4247),
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
@@ -164,8 +165,7 @@ class _ProductCardState extends State<ProductCard> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.add, color: Color(0xFF5D83B1)),
-                  onPressed: () => widget.onAddUnits(
-                      context, widget.product), // Llama a la función pasada
+                  onPressed: () => widget.onAddUnits(context, widget.product),
                 ),
                 IconButton(
                   icon: Icon(

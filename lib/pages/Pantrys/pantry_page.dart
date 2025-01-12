@@ -38,7 +38,7 @@ class _PantryPageState extends State<PantryPage> {
   void initState() {
     super.initState();
     _loadPantries(widget.userId).then((_) {
-      _loadSavedColors(); // Cargar colores después de cargar las despensas
+      _loadSavedColors();
     });
     searchController.addListener(_filterPantries);
   }
@@ -76,7 +76,7 @@ class _PantryPageState extends State<PantryPage> {
 
   Future<void> _loadPantries(String userId) async {
     setState(() {
-      isLoading = true; // Mostrar el indicador
+      isLoading = true;
     });
 
     final querySnapshot = await FirebaseFirestore.instance
@@ -115,7 +115,7 @@ class _PantryPageState extends State<PantryPage> {
       setState(() {
         pantries = loadedPantries;
         filteredPantries = pantries;
-        isLoading = false; // Ocultar el indicador
+        isLoading = false;
       });
     }
   }
@@ -131,7 +131,7 @@ class _PantryPageState extends State<PantryPage> {
 
   @override
   Widget build(BuildContext context) {
-    User? user = FirebaseAuth.instance.currentUser; //xd
+    User? user = FirebaseAuth.instance.currentUser;
     return Scaffold(
       backgroundColor: const Color(0xFFF4F6F8),
       appBar: AppBar(
@@ -149,19 +149,10 @@ class _PantryPageState extends State<PantryPage> {
             fontSize: 24,
           ),
         ),
-        // actions: [
-        //   IconButton(
-        //     icon: const Icon(Icons.menu, color: Color(0xFF124580)),
-        //     onPressed: () {
-        //       // Implementar menú lateral
-        //     },
-        //   ),
-        // ],
       ),
       body: isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                  color: Color(0xFF124580)), // Indicador de carga
+              child: CircularProgressIndicator(color: Color(0xFF124580)),
             )
           : pantries.isEmpty
               ? const Center(
@@ -364,10 +355,8 @@ class _PantryPageState extends State<PantryPage> {
 
                                                     Icon(
                                                       Icons.chevron_right,
-                                                      color: Colors.grey[
-                                                          600], // Puedes personalizar el color
-                                                      size:
-                                                          24, // Ajusta el tamaño del ícono según tus preferencias
+                                                      color: Colors.grey[600],
+                                                      size: 24,
                                                     ),
                                                   ],
                                                 ),
@@ -385,10 +374,10 @@ class _PantryPageState extends State<PantryPage> {
                   ],
                 ),
       floatingActionButton: Align(
-        alignment: Alignment.bottomRight, // Alinea el botón a la derecha
+        alignment: Alignment.bottomRight,
         child: Container(
           margin: const EdgeInsets.all(16),
-          width: 200, // Establece el ancho aproximado
+          width: 200,
           child: FloatingActionButton.extended(
             onPressed: () => _showAddPantryDialog(context),
             backgroundColor: const Color(0xFF2C5B92),
@@ -430,8 +419,7 @@ class _PantryPageState extends State<PantryPage> {
   // Guardar nueva despensa
   void _showAddPantryDialog(BuildContext context) {
     String name = '';
-    IconData tempSelectedIcon = selectedIcon; // Temporal para el icono
-    bool isLoading = false; // Bandera para el círculo de carga
+    IconData tempSelectedIcon = selectedIcon;
     final _formKey = GlobalKey<FormState>();
 
     showDialog(
@@ -440,7 +428,14 @@ class _PantryPageState extends State<PantryPage> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('Nueva Despensa'),
+              title: const Text(
+                'Nueva Despensa',
+                style: TextStyle(
+                  color: Color(0xFF124580),
+                  fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                ),
+              ),
               content: SingleChildScrollView(
                 child: Form(
                   key: _formKey,
@@ -475,16 +470,19 @@ class _PantryPageState extends State<PantryPage> {
                                 Icon(entry.key,
                                     size: 24, color: const Color(0xFF5E6773)),
                                 const SizedBox(width: 8),
-                                Text(entry
-                                    .value), // Nombre representativo del ícono
+                                Text(
+                                  entry.value,
+                                  style: TextStyle(
+                                    color: Color(0xFF3A4247),
+                                  ),
+                                ),
                               ],
                             ),
                           );
                         }).toList(),
                         onChanged: (value) {
                           setState(() {
-                            tempSelectedIcon =
-                                value!; // Actualiza el icono temporalmente
+                            tempSelectedIcon = value!;
                           });
                         },
                       ),
@@ -502,7 +500,6 @@ class _PantryPageState extends State<PantryPage> {
                 TextButton(
                   onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      // Guardar el icono seleccionado en la variable global
                       selectedIcon = tempSelectedIcon;
 
                       // Guardar en Firestore
@@ -545,16 +542,15 @@ class _PantryPageState extends State<PantryPage> {
     Color iconColor = pantryIconColors[pantry['id']] ?? const Color(0xFF5E6773);
     final nameController = TextEditingController(text: name);
 
-    // Color temporal para mostrar los cambios seleccionados antes de guardar
     Color tempIconColor = iconColor;
 
     Widget _buildColorOption(Color color, StateSetter setState) {
       return InkWell(
         onTap: () {
           setState(() {
-            tempIconColor = color; // Cambia solo el color temporal
+            tempIconColor = color;
           });
-          Navigator.pop(context); // Cierra el diálogo de selección de color
+          Navigator.pop(context);
         },
         child: Container(
           width: 40,
@@ -695,8 +691,6 @@ class _PantryPageState extends State<PantryPage> {
                       'nombre': name,
                       'icono': currentIcon.codePoint,
                     });
-
-                    // Guardar color del ícono en SharedPreferences y actualizar estado
                     await _saveIconColor(pantry['id'], tempIconColor);
 
                     // Actualizar el estado con los cambios definitivos
@@ -716,7 +710,7 @@ class _PantryPageState extends State<PantryPage> {
                       filteredPantries = pantries;
                     });
 
-                    Navigator.pop(context); // Cerrar el diálogo de edición
+                    Navigator.pop(context);
 
                     // Mostrar mensaje de éxito
                     ScaffoldMessenger.of(context).showSnackBar(

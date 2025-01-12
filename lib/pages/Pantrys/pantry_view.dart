@@ -29,7 +29,6 @@ class _PantryViewState extends State<PantryView> {
   Map<String, bool> expandedStates = {};
   TextEditingController searchController = TextEditingController();
 
-  // Nuevo
   List<String> selectedProductIds = [];
 
   @override
@@ -39,17 +38,15 @@ class _PantryViewState extends State<PantryView> {
     searchController.addListener(_filterProducts);
   }
 
-// Para buscar productos
   @override
   void dispose() {
     searchController.dispose();
     super.dispose();
   }
 
-  // Cargar productos agrupados por nombre
   Future<void> _loadProductos() async {
     setState(() {
-      isLoading = true; // Mostrar el indicador
+      isLoading = true;
     });
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('usuarios')
@@ -116,7 +113,6 @@ class _PantryViewState extends State<PantryView> {
     });
   }
 
-  // Modificación del método _agregarProductoManual
   void _agregarProductoManual(BuildContext context) {
     final _nombreController = TextEditingController();
     final _cantidadController = TextEditingController();
@@ -131,7 +127,14 @@ class _PantryViewState extends State<PantryView> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Agregar nuevo producto'),
+          title: const Text(
+            'Agregar nuevo producto',
+            style: TextStyle(
+              color: Color(0xFF124580),
+              fontWeight: FontWeight.bold,
+              fontSize: 24,
+            ),
+          ),
           content: SingleChildScrollView(
             child: Form(
               key: _formKey,
@@ -184,7 +187,10 @@ class _PantryViewState extends State<PantryView> {
                     ].map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
-                        child: Text(value),
+                        child: Text(
+                          value,
+                          style: TextStyle(color: Color(0xFF3A4247)),
+                        ),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -237,7 +243,10 @@ class _PantryViewState extends State<PantryView> {
                         .map<DropdownMenuItem<String>>((String value) {
                       return DropdownMenuItem<String>(
                         value: value,
-                        child: Text(value),
+                        child: Text(
+                          value,
+                          style: TextStyle(color: Color(0xFF3A4247)),
+                        ),
                       );
                     }).toList(),
                     onChanged: (String? newValue) {
@@ -287,7 +296,6 @@ class _PantryViewState extends State<PantryView> {
     );
   }
 
-// Modificación del método _guardarProducto para aceptar fecha de vencimiento opcional
   void _guardarProducto(
       String nombre,
       int cantidad,
@@ -492,7 +500,7 @@ class _PantryViewState extends State<PantryView> {
     final String tipoDuracion = producto['tipoDuracion'] ?? 'Días';
     final _cantidadController = TextEditingController();
 
-    bool usarDuracion = true; // Por defecto, usar la duración del producto
+    bool usarDuracion = true; // Por defecto usar la duración del producto
     String fechaIngreso = DateFormat('dd/MM/yyyy').format(DateTime.now());
     String fechaVencimiento = '';
 
@@ -577,7 +585,6 @@ class _PantryViewState extends State<PantryView> {
               onPressed: () async {
                 if (_cantidadController.text.isNotEmpty) {
                   final cantidad = int.parse(_cantidadController.text);
-
                   // Calcular fecha de vencimiento si "usarDuracion" está activo
                   if (usarDuracion) {
                     fechaVencimiento = _calcularFechaVencimiento(
@@ -600,8 +607,8 @@ class _PantryViewState extends State<PantryView> {
                     });
                   }
 
-                  Navigator.of(context).pop(); // Cerrar el modal
-                  _loadProductos(); // Recargar productos
+                  Navigator.of(context).pop();
+                  _loadProductos();
                 }
               },
               child: const Text('Agregar'),
@@ -716,7 +723,7 @@ class _PantryViewState extends State<PantryView> {
           ? const Center(
               child: CircularProgressIndicator(
                 color: Color(0xFF124580),
-              ), // Indicador de carga
+              ),
             )
           : products.isEmpty
               ? const Center(
@@ -773,14 +780,12 @@ class _PantryViewState extends State<PantryView> {
                                   product: filteredProducts[index],
                                   onDeleteProduct: (id) {
                                     _eliminarProducto(id);
-                                    _loadProductos(); // Recargar después de eliminar
+                                    _loadProductos();
                                   },
                                   onEditProduct: _editarProducto,
                                   onEditExpiration: _editarFechaVencimiento,
-                                  onAddUnits:
-                                      _agregarUnidadesProducto, // Pasar la función aquí
-                                  onUnitDeleted:
-                                      _loadProductos, // Recargar después de eliminar una unidad
+                                  onAddUnits: _agregarUnidadesProducto,
+                                  onUnitDeleted: _loadProductos,
                                   userId: widget.userId,
                                   despensaId: widget.despensaId,
                                 );

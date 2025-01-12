@@ -23,9 +23,7 @@ class _ForgotPasswordState extends State<ForgotPassword> {
     try {
       await FirebaseAuth.instance
           .sendPasswordResetEmail(email: _emailController.text.trim());
-      // Muestra un mensaje de éxito o navega a otra pantalla
     } catch (e) {
-      // Maneja el error de Firebase
       print('Error enviando correo de recuperación: $e');
     }
   }
@@ -45,13 +43,11 @@ class _ForgotPasswordState extends State<ForgotPassword> {
       ),
       body: Stack(
         children: [
-          // Sección azul
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: MediaQuery.of(context).size.height *
-                0.18, //posición de la  en lo azul
+            height: MediaQuery.of(context).size.height * 0.18,
             child: Container(
               color: Color(0xFF124580),
               child: Column(
@@ -98,8 +94,6 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       const SizedBox(height: 30),
-
-                      // Campo correo
                       TextField(
                         controller: _emailController,
                         style: TextStyle(color: Color(0xFF3C3F44)),
@@ -113,32 +107,22 @@ class _ForgotPasswordState extends State<ForgotPassword> {
                           errorText:
                               _errorMessage.isNotEmpty ? _errorMessage : null,
                           errorStyle: TextStyle(height: 0.8),
-
-                          // Ajuste de padding para centrar verticalmente el contenido
                           contentPadding: EdgeInsets.symmetric(vertical: 16.0),
-
-                          // Estilo para el hintText
                           hintStyle: TextStyle(
-                            color: Color(
-                                0xFFA3B3B9), // Color por defecto del hintText
+                            color: Color(0xFFA3B3B9),
                           ),
-
-                          // Color campo erroneo o correcto
                           enabledBorder: UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: _errorMessage.isEmpty
-                                  ? Color(0xFFA3B3B9) // Gris por defecto
-                                  : Color(0xFFE4352A)
-                                      .withOpacity(0.8), // Rojo si hay error
+                                  ? Color(0xFFA3B3B9)
+                                  : Color(0xFFE4352A).withOpacity(0.8),
                             ),
                           ),
                           focusedBorder: UnderlineInputBorder(
                             borderSide: BorderSide(
                               color: _errorMessage.isEmpty
-                                  ? Color(
-                                      0xFF6DBDFF) // Azul cuando está correcto
-                                  : Color(0xFFE4352A).withOpacity(
-                                      0.8), // Rojo cuando es inválido
+                                  ? Color(0xFF6DBDFF)
+                                  : Color(0xFFE4352A).withOpacity(0.8),
                             ),
                           ),
                         ),

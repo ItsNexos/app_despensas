@@ -1,5 +1,3 @@
-import 'package:app_despensas/pages/Recipes/Crud/recipes_add.dart';
-import 'package:app_despensas/pages/Recipes/TabBar/recipes.dart';
 import 'package:app_despensas/pages/Recipes/Views/recipes_view.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -86,15 +84,12 @@ class _SuggestionsState extends State<Suggestions> {
         };
       }).toList(),
     );
-
-    // Filtra solo las sugeridas y actualiza la lista
     if (mounted) {
       setState(() {
         sugeridas = sugeridasRecetas
             .where((recipe) => recipe['missingMainIngredients'].isEmpty)
             .toList();
-        filteredRecipes =
-            List.from(sugeridas); // Copia el contenido inicial de sugeridas
+        filteredRecipes = List.from(sugeridas);
         isLoading = false;
       });
     }
@@ -103,8 +98,7 @@ class _SuggestionsState extends State<Suggestions> {
   void _filterRecipes(String query) {
     setState(() {
       if (query.isEmpty) {
-        filteredRecipes =
-            List.from(sugeridas); // Restaura todas las recetas sugeridas
+        filteredRecipes = List.from(sugeridas);
       } else {
         filteredRecipes = sugeridas
             .where((recipe) =>
@@ -134,8 +128,8 @@ class _SuggestionsState extends State<Suggestions> {
             context,
             MaterialPageRoute(
               builder: (context) => RecipeViewPage(
-                recipeId: recipe['id'], // Pasa el ID de la receta
-                user: user!, // Pasa el usuario actual
+                recipeId: recipe['id'],
+                user: user!,
               ),
             ),
           );
@@ -199,7 +193,7 @@ class _SuggestionsState extends State<Suggestions> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: TextField(
-        onChanged: _filterRecipes, // Llama al método para filtrar recetas
+        onChanged: _filterRecipes,
         decoration: InputDecoration(
           hintText: "Buscar recetas",
           hintStyle: TextStyle(color: Colors.white),

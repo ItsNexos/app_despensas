@@ -1,6 +1,7 @@
 import 'package:app_despensas/pages/user_auth/login_page.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'edit_profile_page.dart';
 
 class UserPage extends StatefulWidget {
   @override
@@ -156,7 +157,7 @@ class _UserPageState extends State<UserPage> {
                             width: 300, // Ancho fijo de 300 píxeles
                             child: ElevatedButton(
                               onPressed: () {
-                                // Implementar edición de perfil
+                                _navigateToEditProfile();
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: const Color(0xFF37679E),
@@ -209,59 +210,69 @@ class _UserPageState extends State<UserPage> {
                 ),
               ],
             )
-          : const Center(
-              child: CircularProgressIndicator(
-              color: Color(0xFF124580),
-            )),
+          : const Center(child: CircularProgressIndicator()),
     );
   }
 
-  Widget _buildInfoField({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color iconColor,
-    bool showEndIcon = false,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
+  void _navigateToEditProfile() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditProfilePage(
+          name: _user?.displayName ?? 'Usuario',
+          email: _user?.email ?? '',
+          password: '••••••••',
+        ),
+      ),
+    );
+  }
+}
+
+Widget _buildInfoField({
+  required IconData icon,
+  required String label,
+  required String value,
+  required Color iconColor,
+  bool showEndIcon = false,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(icon, color: iconColor, size: 20),
+          const SizedBox(width: 8),
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.blue.shade300,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+      Container(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(icon, color: iconColor, size: 20),
-            const SizedBox(width: 8),
             Text(
-              label,
+              value,
               style: TextStyle(
-                color: Colors.blue.shade300,
                 fontSize: 16,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w400,
+                color: Color(0xFF3C3F44).withOpacity(0.8),
               ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              height: 1,
+              color: Colors.grey.shade300,
             ),
           ],
         ),
-        Container(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w400,
-                  color: Color(0xFF3C3F44).withOpacity(0.8),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Container(
-                height: 1,
-                color: Colors.grey.shade300,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+      ),
+    ],
+  );
 }

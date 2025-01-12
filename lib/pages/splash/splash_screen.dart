@@ -22,35 +22,26 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void initState() {
     super.initState();
-
-    // Controlador de la animación
     _controller = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     );
 
-    // Configuración de animación de desvanecimiento
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeIn),
     );
 
     _controller.forward();
-
-    // Verificación de internet y redirección después de la animación
     Future.delayed(const Duration(seconds: 4), () {
       _checkInternetConnection();
     });
   }
 
-  // Verifica conexión a internet
   Future<void> _checkInternetConnection() async {
     final connectivityResult = await Connectivity().checkConnectivity();
-
     if (connectivityResult == ConnectivityResult.none) {
-      // Si no hay conexión, mostrar mensaje y cerrar la app
       _showNoInternetDialog();
     } else {
-      // Si hay conexión, verificar autenticación
       _checkAuthentication();
     }
   }
@@ -58,19 +49,15 @@ class _SplashScreenState extends State<SplashScreen>
   // Verifica si el usuario está autenticado
   void _checkAuthentication() {
     User? user = FirebaseAuth.instance.currentUser;
-
     if (user != null) {
-      // Si el usuario está logueado, navega a HomePage
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => HomePage()));
     } else {
-      // Si no está logueado, navega a LoginPage
       Navigator.pushReplacement(
           context, MaterialPageRoute(builder: (context) => LoginPage()));
     }
   }
 
-  // Muestra un diálogo de error y cierra la app
   void _showNoInternetDialog() {
     showDialog(
       context: context,
@@ -81,7 +68,7 @@ class _SplashScreenState extends State<SplashScreen>
         actions: [
           TextButton(
             onPressed: () {
-              exit(0); // Cierra la aplicación
+              exit(0);
             },
             child: const Text("Cerrar"),
           ),
@@ -99,7 +86,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF124580), // Fondo azul
+      backgroundColor: const Color(0xFF124580),
       body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
@@ -107,7 +94,7 @@ class _SplashScreenState extends State<SplashScreen>
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               SvgPicture.asset(
-                'assets/icon.svg', // Ruta al archivo SVG
+                'assets/icon.svg',
                 width: 250,
                 height: 250,
               ),

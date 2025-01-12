@@ -17,9 +17,8 @@ class _RecipesState extends State<Recipes> {
 
   List<Map<String, dynamic>> todas = [];
   bool isLoading = true;
-  List<Map<String, dynamic>> filteredRecipes =
-      []; // Lista para las recetas filtradas
-  String searchQuery = ""; // Texto ingresado en la barra de búsqueda
+  List<Map<String, dynamic>> filteredRecipes = [];
+  String searchQuery = "";
 
   @override
   void initState() {
@@ -72,7 +71,7 @@ class _RecipesState extends State<Recipes> {
     setState(() {
       searchQuery = query;
       if (query.isEmpty) {
-        filteredRecipes = List.from(todas); // Restaura todas las recetas
+        filteredRecipes = List.from(todas);
       } else {
         filteredRecipes = todas
             .where((recipe) =>
@@ -93,7 +92,7 @@ class _RecipesState extends State<Recipes> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop();
               },
               child: const Text("Cancelar"),
             ),
@@ -115,7 +114,7 @@ class _RecipesState extends State<Recipes> {
                     .doc(recipeId)
                     .delete();
 
-                Navigator.of(context).pop(); // Cierra el diálogo
+                Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
                     content: Text('Receta eliminada exitosamente'),
@@ -123,7 +122,6 @@ class _RecipesState extends State<Recipes> {
                 );
                 if (mounted) {
                   setState(() {
-                    // Recarga la lista de recetas
                     _loadRecetas();
                   });
                 }
@@ -140,7 +138,7 @@ class _RecipesState extends State<Recipes> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: TextField(
-        onChanged: _filterRecipes, // Llama al método para filtrar recetas
+        onChanged: _filterRecipes,
         decoration: InputDecoration(
           hintText: "Buscar recetas",
           hintStyle: TextStyle(color: Colors.white),
@@ -172,8 +170,8 @@ class _RecipesState extends State<Recipes> {
             context,
             MaterialPageRoute(
               builder: (context) => RecipeViewPage(
-                recipeId: recipe['id'], // Pasa el ID de la receta
-                user: user!, // Pasa el usuario actual
+                recipeId: recipe['id'],
+                user: user!,
               ),
             ),
           );
@@ -215,8 +213,8 @@ class _RecipesState extends State<Recipes> {
                   context,
                   MaterialPageRoute(
                     builder: (context) => RecipeEditPage(
-                      recipeId: recipe['id'], // Pasa el ID de la receta
-                      user: user!, // Pasa el usuario actual
+                      recipeId: recipe['id'],
+                      user: user!,
                     ),
                   ),
                 );
@@ -256,7 +254,7 @@ class _RecipesState extends State<Recipes> {
                 )
               : Column(
                   children: [
-                    _buildSearchBar(), // Agrega la barra de búsqueda
+                    _buildSearchBar(),
                     Expanded(
                       child: filteredRecipes.isEmpty
                           ? const Center(
@@ -270,13 +268,10 @@ class _RecipesState extends State<Recipes> {
                               ),
                             )
                           : ListView.builder(
-                              itemCount: filteredRecipes.length +
-                                  1, // Incrementa el tamaño para el espacio
+                              itemCount: filteredRecipes.length + 1,
                               itemBuilder: (context, index) {
                                 if (index == filteredRecipes.length) {
-                                  return const SizedBox(
-                                      height:
-                                          80.0); // Espacio debajo de la lista
+                                  return const SizedBox(height: 80.0);
                                 }
                                 return _buildRecipeTile(filteredRecipes[index]);
                               },
