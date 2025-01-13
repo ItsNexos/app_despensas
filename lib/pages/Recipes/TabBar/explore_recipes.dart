@@ -14,7 +14,7 @@ class _ExploreRecipesState extends State<ExploreRecipes> {
   final User? user = FirebaseAuth.instance.currentUser;
   List<Map<String, dynamic>> allRecipes = [];
   List<Map<String, dynamic>> filteredRecipes = [];
-  String selectedFilter = "Usuarios";
+  String selectedFilter = "DespensApp";
   List<String> selectedCategories = [];
   String searchQuery = "";
 

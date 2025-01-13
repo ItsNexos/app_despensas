@@ -223,12 +223,13 @@ class _SuggestionsState extends State<Suggestions> {
           : sugeridas.isEmpty
               ? const Center(
                   child: Text(
-                    'No hay recetas sugeridas',
+                    '¡Ups! Aún no tenemos recetas para sugerirte. Agrega más productos a tus despensas para obtener recomendaciones :)',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF124580),
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 )
               : Column(

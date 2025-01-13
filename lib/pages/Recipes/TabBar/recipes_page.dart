@@ -38,7 +38,7 @@ class _RecipesPageState extends State<RecipesPage>
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Mis Recetas',
+          'Recetas',
           style: TextStyle(
             color: Color(0xFF124580),
             fontWeight: FontWeight.bold,
@@ -53,7 +53,7 @@ class _RecipesPageState extends State<RecipesPage>
           tabs: const [
             Tab(
               child: Text(
-                'SUGERENCIAS',
+                'SUGERIDAS',
                 style: TextStyle(fontSize: 13.8),
               ),
             ),

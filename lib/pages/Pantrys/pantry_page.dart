@@ -142,7 +142,7 @@ class _PantryPageState extends State<PantryPage> {
           onPressed: () => Navigator.of(context).pop(),
         ),
         title: const Text(
-          'Mis Despensas',
+          'Mis despensas',
           style: TextStyle(
             color: Color(0xFF124580),
             fontWeight: FontWeight.bold,

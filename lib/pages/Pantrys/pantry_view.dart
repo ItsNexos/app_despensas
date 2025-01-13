@@ -728,12 +728,13 @@ class _PantryViewState extends State<PantryView> {
           : products.isEmpty
               ? const Center(
                   child: Text(
-                    'No existen Productos',
+                    'Tu despensa está vacía. ¡Agrega productos para comenzar!',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF124580),
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 )
               : Column(

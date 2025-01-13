@@ -244,12 +244,13 @@ class _RecipesState extends State<Recipes> {
           : todas.isEmpty
               ? const Center(
                   child: Text(
-                    'No existen recetas',
+                    'No tienes recetas registradas. Crea o guarda tus recetas favoritas para verlas aquí.',
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF124580),
                     ),
+                    textAlign: TextAlign.center,
                   ),
                 )
               : Column(
